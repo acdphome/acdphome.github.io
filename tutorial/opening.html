@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <title>Java ACDP Tutorial</title>
+   <meta name="description" content="Tutorial for ACDP (Application Controlled
+               Data Persistence)" />
+   <meta name="author" content="Beat Hörmann" />
+   <meta name="keywords" content="ACDP, Java, database, persistence,
+               navigational, noSql" />
+   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+   <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="top">&nbsp;</div>
+<header>
+   <h1>Java ACDP Tutorial</h1>
+</header>
+<nav id="navMain">
+   <a href="index.html">Home</a>
+   <a href="design.html">Design</a>
+   <a href="creation.html">Creation</a>
+   <a class="selected" href="#">Opening</a>
+   <a href="elaboration.html">Elaboration</a>
+   <a href="querying.html">Querying</a>
+   <a href="maintenance.html">Maintenance</a>
+   <a href="sources.html">Sources</a>
+</nav>
+<main>
+<section>
+   <h2>Opening</h2>
+   A database must be opened before it can be used and it must be closed when
+   it is no longer used.
+   <p>
+   Creating a database by invoking the constructor of a class that extends the
+   <a href="../javadoc/acdp/design/CustomDatabase.html" target="_blank">
+   <code>CustomDatabase</code></a> class opens the database as a <em>strongly
+   typed</em> database whereas creating an instance of the
+   <a href="../javadoc/acdp/Database.html" target="_blank"><code>Database</code></a>
+   interface by invoking the
+   <a href="../javadoc/acdp/Database.html#open(java.nio.file.Path,int,boolean)"
+   target="_blank"><code>Database.open</code></a> method opens the database as
+   a <em>weakly typed</em> database.
+   For example, assuming our sample database which we created in Section
+   <q><a href="creation.html#section2">Creating the Database</a></q> of Chapter
+   <q><a href="creation.html">Creation</a></q> is still saved in the
+   <q>dbDir</q> directory, setting
+   </p>
+   <pre><code>   Path path = Paths.get("dbDir/layout");</code></pre>
+   
+   and applying the <code>try-with-resources</code> statement
+   
+   <pre><code>   try (EduDB db = new EduDB(path, -1, false, 0)) {
+      // do something with db
+   }</code></pre>
+   
+   opens and closes the sample database as a <em>strongly typed</em> database,
+   whereas
+   
+   <pre><code>   try (Database db = Database.open(path, -1, false, null)) {
+      // do something with db
+   }</code></pre>
+   
+   opens and closes the same database as a <em>weakly typed</em> database.
+   (The parameters of the methods are explained in Section <q><a
+   href="#section2">Parameters</a></q>.)
+   
+   <p>
+   The remaining sections of this page are
+   </p>
+   <div class="navPage">
+      <a href="#section1">Strongly and Weakly Typed</a>
+      <a href="#section2">Parameters</a>
+   </div>
+</section>
+
+<section id="section1">
+   <h2>Strongly and Weakly Typed</h2>
+   Database queries make references to tables and columns and the result is
+   typically a collection of values, each value being of a particular data
+   type.
+   <p>
+   A strongly typed database has well-defined fields that refer to instances
+   of strongly typed tables which in turn refer to instances of strongly
+   typed columns.
+   For example, in Chapter <q><a href="design.html">Design</a></q> we defined
+   the field <code>TEACHER_TABLE</code> in the <code>EduDB</code> class and
+   the field <code>POSTAL_CODE</code> in the <code>ContactTable</code> class.
+   So
+   </p>
+   <pre>
+   <code>TeacherTable t = EduDB.TEACHER_TABLE;</code>
+   <code>Column&lt;Integer&gt; c = ContactTable.POSTAL_CODE;</code></pre>
+   
+   are valid assignments.
+   Note that the value of a postal code is an instance of the
+   <code>Integer</code> class.
+   Any typos or wrong assumptions about the type of a column's value are
+   reported at compile-time.
+   (Try it by replacing <code>Integer</code> with a different type.)
+   Moreover, the program code is completely independent of the table and column
+   names so that these can be changed later without affecting client code.
+   Changing the type of a column is no problem either because the compiler
+   signals this change to the programmer by reporting a compilation error.
+   <p>
+   Unfortunately, we can't use these strongly typed fields if we open the
+   database as a weakly typed database.
+   In a weakly typed database, tables and columns have to be referenced by name
+   and a value must often be cast to its assumed <q>real</q> type.
+   For example, assume that the sample database was opened as a weakly typed
+   database.
+   Best we can do for assigning the Teacher table and the Postal Code column
+   is:
+   </p>
+   <pre>
+   <code>Table t = db.getTable("Teacher")</code>;
+   <code>Column&lt;?&gt; c = db.getTable("Contact").getColumn("PostalCode")</code>;</pre>
+   
+   These methods do not return instances of the strong types
+   <code>TeacherTable</code> and <code>Column&lt;Integer&gt;</code> but of the
+   weak types
+   <a href="../javadoc/acdp/Table.html" target="_blank"><code>Table</code></a> and
+   <a href="../javadoc/acdp/Column.html" target="_blank">
+   <code>Column&lt;?&gt;</code></a>, respectively.
+   Note how the <q>real</q> type of a postal code is left open.
+   You won't see any errors at compile-time if you misspelled the name of a
+   table or column or if you did cast a postal code to a wrong type.
+   Only at runtime will you notice sooner or later that your code does not
+   behave as you expect.
+   Even worse, the program code depends on table and column names, so any change
+   in the name of a referenced table or column will silently break your code.
+   The same applies if you change the type of a column and somewhere in your
+   code lurks a cast of a value of that column to its <q>real</q> type.
+   <p>
+   Another point concerns the limitation to meet constraints resulting from the
+   domain-specific data model.
+   For example, the insertion of an arbitrary integer into the Postal Code
+   column of the Contact table should be avoided, because not every arbitrary
+   integer represents a postal code.
+   In general, the <a href="design.html#uml">UML diagram</a> suggests that
+   contacts should only be inserted into and removed from the Contact table in
+   connection with students and teachers.
+   </p>
+   <p>
+   Such domain-specific constraints can be programmed in the custom database
+   class and the custom table classes or outside of these classes, but using
+   these classes.
+   On the other hand, it is not possible to enforce domain-specific constraints
+   if the database is opened as a weakly typed database.
+   </p>
+   <p>
+   After all, the reader might wonder why ACDP allows a database to be opened as
+   a weakly typed database.
+   The reason is that there are use cases that require reading and manipulating
+   the data stored in a database in a general context that is not specific to
+   its domain.
+   One such use case is, for example, an application that outputs the content
+   of <em>any</em> table in a human-readable manner.
+   </p>
+   Opening a database as a weakly typed database can be done from the
+   information saved in the database layout only.
+   (The database layout of a WR database is stored in the layout file whereas
+   the database layout of an RO database is contained in the one and only one
+   RO database file.)
+   Therefore, ACDP does not need to know of a custom database class or of any
+   custom table classes in order to open a database as a weakly typed database.
+</section>
+
+<section id="section2">
+   <h2>Parameters</h2>
+   The signatures of the methods for opening a database as a strongly typed
+   database and a weakly typed database are
+   
+   <pre>
+   <code>CustomDatabase.open(Path mainFile, int opMode, boolean writeProtect,
+                  ICipherFactory cipherFactory, int consistencyNumber,
+                                           CustomTable... customTables)</code></pre>
+   and
+   
+   <pre>
+   <code>Database.open(Path mainFile, int opMode, boolean writeProtect,
+                                    ICipherFactory cipherFactory)</code></pre>
+   respectively.
+   The set of parameters of the latter method is a subset of the set of
+   parameters of the first method.
+   The semantic of each parameter is:
+   
+   <dl>
+      <dt><code>mainFile</code></dt>
+      <dd>The path&mdash;including the file name&mdash;of the main database
+      file.
+      The main database file of a WR database is the layout file whereas the
+      main database file of an RO database is the one and only RO database
+      file.</dd>
+      <dt><code>opMode</code></dt>
+      <dd>The mode of operation: -3 (RO only), -2 (RO only), -1, 0, &gt; 0.<br>
+      If the value is equal to zero then the backing table files (only one file
+      if the database is an RO database) are immediately closed as soon as they
+      become idle.
+      If the value is positive and equal to <code>n</code> then the backing
+      table files are closed <code>max(10, n)</code> milliseconds after they
+      become idle or when the database is closed.
+      If the value is equal to -1 then the backing table files once opened
+      remain open until the database is closed.
+      If the value is equal to -2 then the <em>zipped</em> and
+      <em>encrypted</em> (if encryption is turned on) content of an RO database
+      is completely mapped into memory.
+      If the value is equal to -3 then the <em>unzipped</em> and
+      <em>decrypted</em> (if encryption is turned on) content of an RO database
+      is completely mapped into memory.<br>
+      A value equal to zero is recommended only if the database is a WR database
+      and the operating system can't sustain a bunch of files all being opened
+      at the same time.
+      In a server environment, a positive value is recommended or, provided
+      that the database is an RO database and there is enough memory available,
+      a value equal to -2 (less memory required, slower) or -3 (more memory
+      required, faster).</dd>
+      <dt><code>writeProtect</code></dt>
+      <dd>Protects a WR database from being modified.
+      If set to <code>true</code> then no data of the database can be inserted,
+      deleted or updated.
+      This parameter has no effect if the database is an RO database.</dd>
+      <dt><code>cipherFactory</code></dt>
+      <dd>The cipher factory or <code>null</code> if no encryption is required.
+      See Section <q><a href="design.html#section5">Coding a Cipher
+      Factory</a></q> of Chapter <q><a href="design.html">Design</a></q>
+      for an example of a cipher factory.</dd>
+      <dt><code>consistencyNumber</code></dt>
+      <dd>The consistency number.
+      The consistency number is stored in the database layout.
+      If the value of this parameter does not match the stored value then
+      opening the database fails.
+      The purpose of this parameter is to link a specific version of the
+      domain-specific database logic to a matching version of the data in the
+      database.
+      The <a href="../javadoc/acdp/tools/Setup.html" target="_blank">Setup Tool</a>
+      sets the value of the consistency number to zero when it creates the
+      layout file.</dd>
+      <dt><code>customTables</code></dt>
+      <dd>The list of custom tables.
+      The value of this parameter is predefined by the concrete custom database
+      class and is not intended to be chosen by the database user.</dd>
+   </dl>
+</section>
+<div class="backToTop"><a href="#top">Back To Top</a></div>
+</main>
+</body>
+</html>

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <title>Java ACDP Tutorial</title>
+   <meta name="description" content="Tutorial for ACDP (Application Controlled
+               Data Persistence)" />
+   <meta name="author" content="Beat Hörmann" />
+   <meta name="keywords" content="ACDP, Java, database, persistence,
+               navigational, noSql" />
+   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+   <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="top">&nbsp;</div>
+<header>
+   <h1>Java ACDP Tutorial</h1>
+</header>
+<nav id="navMain">
+   <a href="index.html">Home</a>
+   <a href="design.html">Design</a>
+   <a href="creation.html">Creation</a>
+   <a href="opening.html">Opening</a>
+   <a href="elaboration.html">Elaboration</a>
+   <a class="selected" href="#">Querying</a>
+   <a href="maintenance.html">Maintenance</a>
+   <a href="sources.html">Sources</a>
+</nav>
+<main>
+<section>
+   <h2>Querying</h2>
+   There is neither a query language nor a data definition language in ACDP.
+   Simply put: ACDP's SQL is Java.
+   This chapter shows you how to formulate and execute queries and how to
+   change data in the database, inside or outside a database transaction.
+   <p>
+   Structural changes to the database are not an issue in this chapter.
+   Structural changes include removing a table from the database or inserting a
+   new column into an existing table.
+   How to structurally change the database is shown in Section
+   <q><a href="maintenance.html#section3">Refactoring</a></q> of Chapter
+   <q><a href="maintenance.html">Maintenance</a></q>.
+   </p>
+   <p>
+   The remaining sections of this page are
+   </p>
+   <div class="navPage">
+      <a href="#section1">Populating the Database</a>
+      <a href="#section2">Which of <code>EduPL</code>, <code>EduDB</code>,
+      and <code>Database</code> to use?</a>
+      <a href="#section3">Ad-hoc Queries</a>
+      <a href="#section4">Data Changes</a>
+      <a href="#section5">Transactions, Units, Read Zones</a>
+   </div>
+</section>
+
+<section id="section1">
+   <h2>Populating the Database</h2>
+   To populate the sample database just invoke the <code>run</code> method of
+   the  <a href="sources.html#Populator"><code>Populator</code></a> class.
+ </section>
+
+<section id="section2">
+   <h2>Which of <code>EduPL</code>, <code>EduDB</code>, and
+       <code>Database</code> to use?</h2>
+   How data stored in the database is accessed depends on how the database is
+   opened.
+   If the persistence layer is opened, an instance of the
+   <a href="sources.html#EduPL"><code>EduPL</code></a> class is used for reading
+   data from and writing data to the database.
+   If, on the other hand, the database is
+   <a href="opening.html">opened directly</a>, the central class to communicate
+   with the database is either the domain-specific
+   <a href="sources.html#EduDB"><code>EduDB</code></a> class or the
+   non-domain-specific <a href="../javadoc/acdp/Database.html" target="_blank">
+   <code>Database</code></a> interface, depending on whether the database is
+   opened as a strongly typed or weakly typed database.
+   
+   <pre><code>   Path path = Paths.get("dbDir/layout");
+   
+   // Open persistence layer.
+   try (EduPL pl = new EduPL(path, -1, false, 0)) {
+      // do something with pl
+   }
+   
+   // Open database as strongly typed database.
+   try (EduDB db = new EduDB(path, -1, false, 0)) {
+      // do something with db
+   }
+   
+   // Open database as weakly typed database.
+   try (Database db = Database.open(path, -1, false, null)) {
+      // do something with db
+   }</code></pre>
+   
+   Whenever possible, use the persistence layer, as it is the easiest and safest
+   to use.
+   This applies in particular if data is to be inserted, updated or deleted.
+   However, the persistence layer abstracts from the underlying database tables
+   and table rows.
+   So, whenever there is a need for a direct access to the tables and rows, the
+   database should be openend as a strongly typed database.
+   <p>
+   The database should only be opened as a weakly typed database if the use
+   case can neither be implemented with the persistence layer nor by opening
+   the database as a strongly typed database or if the use case is not
+   domain-specific.
+   (For example, a non-domain-specific use case is <q>get the names of the
+   tables of the database</q>.)
+   </p>
+   To show the difference, let us write some code to display the name and email
+   address of the student with number 74.
+   (The name and email address of the student with number 74 is equal to
+   <q>Nigel Lee</q> and <q>nigel@example.com</q>, respectively).
+   We do not repeat the process of opening the database.
+   
+   <h3><code>EduPL</code></h3>
+   <pre><code>   // pl instance of EduPL
+   Student student = pl.getStudent(74);
+   System.out.println(student.getName() + "  " +
+                      student.getContact().getEmail());</code></pre>
+                      
+   + Compact<br>
+   + Foolproof<br>
+   + Built-in index can be used
+   
+   <h3><code>EduDB</code></h3>
+   <pre><code>   // EduDB is open
+   Row row = STUDENT_TABLE.get(
+                         STUDENT_TABLE.indexGet(74),
+                                     NAME, CONTACT);
+   String email = CONTACT_TABLE.getValue(
+                           row.get(CONTACT), EMAIL);
+   System.out.println(row.get(NAME) + "  " + email);</code></pre>
+   
+   (We use static imports to avoid qualifying constants, for example
+   <code>STUDENT_TABLE</code> instead of <code>EudDB.STUDENT_TABLE</code> or
+   <code>CONTACT</code> instead of <code>StudentTable.CONTACT</code>.)
+   <p>
+   - Less convenient<br>
+   - No enforcement of domain-specific constraints implemented in the
+   persistence layer (not a problem in this example)<br>
+   + Built-in index can be used<br>
+   + Easy and strongly typed access to tables and columns
+   </p>
+   
+   <h3><code>Database</code></h3>
+   <pre><code>   // db instance of Database
+   Table studentTable = db.getTable("Student");
+   Column&lt;?&gt; studentNumberColumn = studentTable.
+                                   getColumn("Student Number");
+   Column&lt;?&gt; nameColumn = studentTable.getColumn("Name");
+   Column&lt;?&gt; contactColumn = studentTable.getColumn("Contact");
+			
+   Table contactTable = db.getTable("Contact");
+   Column&lt;?&gt; emailColumn = contactTable.getColumn("Email");
+			
+   Row studentRow = studentTable.rows(studentNumberColumn,
+                                     nameColumn, contactColumn).
+        filter(row -> (int) row.get(studentNumberColumn) == 74).
+        findAny().get();
+			
+   Row contactRow = contactTable.get((Ref) studentRow.get(
+                                  contactColumn), emailColumn);
+   System.out.println(studentRow.get(nameColumn) + "  " +
+                                  contactRow.get(emailColumn));</code></pre>
+                                  
+   - Verbose<br>
+   - Cumbersome and error-prone access to tables and columns<br>
+   - Must iterate Student table
+ </section>
+
+<section id="section3">
+   <h2>Ad-hoc Queries</h2>
+   When it comes to formulating a query <q>on the fly</q>, ACDP cannot compete
+   with SQL.
+   This is not surprising, because SQL is an interpreted, declarative language
+   developed with a focus on the spontaneous formulation of database queries,
+   while Java is a compilable, general-purpose programming language.
+   However, even if ad-hoc queries in ACDP are not quite as ad-hoc as in SQL:
+   For a Java programmer who is practiced in querying data structures of a
+   certain complexity, they do not pose a major challenge.
+   And the nice thing is that no knowledge beyond Java is required to program
+   database queries in ACDP <em>and</em> to process their results.
+   <p>
+   In the following we define a query on our sample database to be an
+   <em>ad-hoc query</em> if it cannot be done with the persistence layer.
+   Therefore, we open the sample database as a strongly typed <code>EduDB</code>
+   database as was shown in the previous section.
+   </p>
+   <section id="section3.1">
+   <h3>Visiting the Rows of a Table</h3>
+   It is possible to iterate over the rows of a table.
+   Good to know that the order in which the rows of an unchanged table are
+   returned by any of the iterators is always the same.
+   In addition, ACDP supports the streams API of Java 8.
+   <p>
+   For example, to display the names of all courses can be done in the
+   following three ways.
+   (The process of opening the database and the declaration of some necessary
+   static imports are omitted.)
+   </p>
+   1. Applying a for-each loop
+   
+   <pre><code>   for (Row row : COURSE_TABLE) {
+      System.out.println(row.get(NAME));
+   }</code></pre>
+   
+   2. Getting an instance of <code>Iterator&lt;Row&gt;</code>
+   
+   <pre><code>   for (Iterator&lt;Row&gt; it = COURSE_TABLE.iterator(NAME);
+                                        it.hasNext();) {
+      System.out.println(it.next().get(NAME));
+   }</code></pre>
+   
+   3. Using <code>Stream&lt;Row&gt;</code>
+   
+   <pre><code>   COURSE_TABLE.rows(NAME).forEach(row ->
+                     System.out.println(row.get(NAME)));</code></pre>
+                     
+   Note that the <code>Row</code> instances returned in the for-each loop of the
+   first variant contain all column values, including the values for the ID and
+   Teacher column of the Course table.
+   In the second and third variant the row instances only contain the values of
+   the Name column.
+   </section>
+   
+   <section id="section3.2">
+   <h3>More Queries</h3>
+   &bull; Create a list of names of all students enrolled in the C# programming
+   course:
+   
+   <pre><code>   List&lt;String&gt; result = STUDENT_TABLE.rows(NAME, COURSES).
+          filter(r -> Arrays.stream(r.get(COURSES)).
+               filter(ref -> COURSE_TABLE.getValue(ref,
+                     CourseTable.ID).equals("CSHARP")).
+                     findAny().isPresent()).
+          map(r -> r.get(NAME)).collect(toList());</code></pre>
+          
+   &bull; Create a map with keys being the names of the teachers and values
+   being the names of the students attending at least one of the courses
+   instructed by the teacher:
+   
+   <pre><code>   Map&lt;String, List&lt;String&gt;&gt; result = new HashMap&lt;&gt;();
+   for (Row tRow : TEACHER_TABLE) {
+      List&lt;Ref&gt; l1 = Arrays.asList(tRow.get(
+                              TeacherTable.COURSES));
+      List&lt;String&gt; sList = new ArrayList&lt;&gt;();
+      for (Row sRow : STUDENT_TABLE) {
+         List&lt;Ref&gt; l2 = Arrays.asList(sRow.get(
+                              StudentTable.COURSES));
+         if (l1.stream().filter(l2::contains).
+                             findAny().isPresent()) {
+            sList.add(sRow.get(StudentTable.NAME));
+         }
+      }
+      result.put(tRow.get(TeacherTable.NAME), sList);
+   }</code></pre>
+   
+   Of course, many more queries are conceivable.
+   </section>
+</section>
+
+<section id="section4">
+   <h2>Data Changes</h2>
+   To ensure that no domain-specific constraints are violated, data changes
+   should only be made using the persistence layer.
+   For example, deleting teacher "Jane Smith" by calling
+   
+   <pre><code>   // pl instance of EduPL
+   pl.deleteTeacher("Jane Smith");</code></pre>
+   
+   not only causes the data of <q>Jane Smith</q> to be removed from the Teacher
+   table, but also removes her contact details from the Contact table.
+   Furthermore, the values in the Teacher column of the Course table are
+   overwritten with the <code>null</code> value for the courses that "Jane
+   Smith" has instructed.
+   <p>
+   Here is how to change the email address of student 74 to
+   <q>n.lee@example.com</q> and add the course <q>LSSGBP</q> to his list of
+   courses:
+   </p>
+   
+   <pre><code>   Student student = pl.getStudent(74);
+   Contact contact = student.getContact();
+   List&lt;String&gt; courses = student.getCourses();
+   
+   contact.setEmail("n.lee@example.com");
+   courses.add("LSSGBP");
+         
+   pl.persistStudent(74, student.getName(), contact, courses);</code></pre>
+   
+   Sometimes, however, changes to the data need to be made ad-hoc.
+   Let us assume, for example, that the system for assigning postal codes has
+   been changed: All postal codes starting with 8 are to start with 80.
+   So the postal code 84672 should now be 804672.
+   The persistence layer doesn't provide direct access to the contact details.
+   Hence, we open the database as a strongly typed <code>EduDB</code> database
+   and call
+   
+   <pre><code>   EduDB.CONTACT_TABLE.updateAllChangeValues(
+           ContactTable.POSTAL_CODE,
+           pc -> pc / 10000 == 8 ? 800000 + pc % 80000 : pc);</code></pre>
+</section>
+
+<section id="section5">
+   <h2>Transactions, Units, Read Zones</h2>
+   So far, all database operations were executed outside a transaction.
+   We tacitly assumed that
+   
+   <ol>
+      <li>A possible destruction of the database's integrity is accepted.
+      (This may be due to a write operation that catastrophically fails.)</li>
+      <li>A possible violation of domain-specific constraints is accepted.
+      (This may be because a sequence of write operations could not be
+      completed due to an unexpected exceptional situation.)</li>
+      <li>No other clients use the database at the same time.</li>
+   </ol>
+   
+   To execute a database operation within a transaction it must be executed
+   either within a <a href="../javadoc/acdp/Unit.html" target="_blank">unit</a> or
+   a <a href="../javadoc/acdp/ReadZone.html" target="_blank">read zone</a>.
+   Database operations in a read zone must be read-only.
+   <p>
+   For example, using a unit, the code snippet
+   </p>
+   
+   <pre><code>   try (Unit u = pl.openUnit()) {
+      pl.deleteCourse("CFR");
+      <mark>u.commit();</mark>
+   }</code></pre>
+   
+   removes the <q>CFR</q> course from the database.
+   (The <q>CFR</q> course is a <q>dangling</q> course because it is neither
+   referenced by a student nor a teacher.)
+   If <code>u.commit()</code> had been missing, the deletion process would have
+   been undone when the unit was closed.
+   For example, the following code does not remove the other dangling courses
+   from the database, because <code>u.commit()</code> is missing:
+   
+   <pre><code>   // Don't forget u.commit() after the last write operation.
+   try (Unit u = pl.openUnit()) {
+      pl.deleteCourse("CDPC");
+      pl.deleteCourse("HDJ");
+      pl.deleteCourse("MBS");
+   }</code></pre>
+   
+   And
+   
+   <pre><code>   // Don't forget u.commit() after the last write operation.
+   try (Unit u = pl.openUnit()) {
+      pl.deleteCourse("CDPC");
+      pl.deleteCourse("HDJ");
+      <mark>u.commit();</mark>
+      pl.deleteCourse("MBS");
+   }</code></pre>
+   
+   just removes the <q>CDPC</q> and <q>HDJ</q> courses but not the
+   <q>MBS</q> course from the database.
+   <p>
+   The integrity of the database is maintained even if a call to
+   <code>u.commit()</code> is missing.
+   However, one must be aware that if database changes are rolled back, other
+   things can get into disarray: In the example above, the <em>index</em> of the
+   Course table will miss the entry for the <q>MBS</q> course, although that
+   course still resides in the database.
+   This is because the removal of the <q>MBS</q> course from the index has not
+   been undone.
+   </p>
+   <p>
+   <em>It is a good idea to treat any rollback situation as a bug.</em>
+   </p>
+   <p>
+   Two database write operations that are started in two different threads are
+   never executed concurrently, regardless of whether they run inside or outside
+   a unit.
+   Write operations are therefore synchronized.
+   On the other hand, read operations are not synchronized.
+   They can fail if a write operation is currently running in a different
+   thread.
+   To synchronize read operations, use a read zone.
+   Read operations within a read zone are never executed concurrently with
+   a write operation, but they are executed concurrently with read operations
+   inside open read zones in different threads.
+   </p>
+   In Section <q><a href="#section3.1">Visiting the Rows of a Table</a></q>
+   from above we displayed the name of all courses in the Course table.
+   Let's do the same thing but this time inside a read zone:
+   
+   <pre><code>   try (ReadZone rz = db.openReadZone()) {
+      COURSE_TABLE.rows(NAME).forEach(row ->
+                     System.out.println(row.get(NAME)));
+   }</code></pre>
+   
+   Learn more about how transactions are implemented in ACDP by reading the
+   sections <q>Units</q>, <q>Read Zones</q>, and <q>Durability</q> in the
+   Javadoc description of the <a href="../javadoc/acdp/Database.html"
+   target="_blank"><code>Database</code></a> interface.
+</section>
+<div class="backToTop"><a href="#top">Back To Top</a></div>
+</main>
+</body>
+</html>

@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <title>Java ACDP Tutorial</title>
+   <meta name="description" content="Tutorial for ACDP (Application Controlled
+               Data Persistence)" />
+   <meta name="author" content="Beat Hörmann" />
+   <meta name="keywords" content="ACDP, Java, database, persistence,
+               navigational, noSql" />
+   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+   <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="top">&nbsp;</div>
+<header>
+   <h1>Java ACDP Tutorial</h1>
+</header>
+<nav id="navMain">
+   <a href="index.html">Home</a>
+   <a href="design.html">Design</a>
+   <a href="creation.html">Creation</a>
+   <a href="opening.html">Opening</a>
+   <a href="elaboration.html">Elaboration</a>
+   <a href="querying.html">Querying</a>
+   <a href="maintenance.html">Maintenance</a>
+   <a class="selected" href="#">Sources</a>
+</nav>
+<main>
+<section>
+   <h2>Sources</h2>
+   Lists the source code of the classes used in this tutorial.
+   <p>
+   Package <code>example.db</code>
+   </p>
+   <div class="navPage">
+      <a href="#BigIntegerType"><code>BigIntegerType</code></a>
+      <a href="#CipherFactory"><code>CipherFactory</code></a>
+      <a href="#ContactTable"><code>ContactTable</code></a>
+      <a href="#CourseTable"><code>CourseTable</code></a>
+      <a href="#EduDB"><code>EduDB</code></a>
+      <a href="#IdTable"><code>IdTable</code></a>
+      <a href="#RoomTable"><code>RoomTable</code></a>
+      <a href="#StudentTable"><code>StudentTable</code></a>
+      <a href="#TeacherTable"><code>TeacherTable</code></a>
+   </div>
+   <p>
+   Package <code>example.pl</code>
+   </p>
+   <div class="navPage">
+      <a href="#Contact"><code>Contact</code></a>
+      <a href="#Course"><code>Course</code></a>
+      <a href="#EduPL"><code>EduPL</code></a>
+      <a href="#Person"><code>Person</code></a>
+      <a href="#Student"><code>Student</code></a>
+      <a href="#Teacher"><code>Teacher</code></a>
+   </div>
+   <p>
+   Package <code>example</code>
+   </p>
+   <div class="navPage">
+      <a href="#Populator"><code>Populator</code></a>
+   </div>
+</section>
+
+<section id="BigIntegerType">
+   <h2><code>example.db.BigIntegerType</code></h2>
+   <pre>
+public final class BigIntegerType extends SimpleType&lt;BigInteger&gt; {
+   // The prefix of the type descriptor. Note that the prefix must start with
+   // an uppercase charcter.
+   private static final String TD_PREFIX = "BigInteger";
+   
+   @TypeFromDesc
+   public static final BigIntegerType createType(String typeDesc) throws
+                                                            CreationException {
+      final TypeDesc td = new TypeDesc(typeDesc);
+      if (!td.prefix.equals(TD_PREFIX) || td.scheme != Scheme.INROW ||
+                                                               !td.variable) {
+         throw new CreationException("Illegal type descriptor");
+      }
+      return new BigIntegerType(td.limit, Nulls.get(td.nullable));
+   }
+   
+   BigIntegerType(int limit, Nulls nulls) throws IllegalArgumentException {
+      super(BigInteger.class, Scheme.INROW, nulls.value(), limit, true);
+   }
+
+   @Override
+   protected final String typeDescPrefix() {
+      return TD_PREFIX;
+   }
+   
+   @Override
+   protected final byte[] toBytes(BigInteger val) throws NullPointerException {
+      return val.toByteArray();
+   }
+
+   @Override
+   public final BigInteger fromBytes(byte[] bytes, int offset, int len) throws
+                                                   IndexOutOfBoundsException {
+      return new BigInteger(Arrays.copyOfRange(bytes, offset, offset + len));
+   }
+}</pre>
+</section>
+
+<section id="CipherFactory">
+   <h2><code>example.db.CipherFactory</code></h2>
+   <pre>
+final class CipherFactory implements ICipherFactory {
+   private final IvParameterSpec iv = new IvParameterSpec(new byte[] {
+                                    114, -8, 22, -67, -71, 30, 118, -103,
+                                    51, -45, -110, -65, 16, -127, -73, 103 });
+
+   private final Key key = new SecretKeySpec(new byte[] { 114, -8, 23, -67,
+                                       -71, 30, 118, -103, 51, -45, -110, -65,
+                                       16, -127, -73, 103 }, "AES");
+   @Override
+   public final Cipher createCipher() throws NoSuchAlgorithmException,
+                                                      NoSuchPaddingException {
+      // Example with padding: AES/CBC/PKCS5Padding
+      return Cipher.getInstance("AES/CTR/NoPadding");
+   }
+
+   @Override
+   public final void initCipher(Cipher cipher, boolean encrypt) throws
+                     InvalidKeyException, InvalidAlgorithmParameterException {
+      cipher.init(encrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE, key, iv);
+   }
+}</pre>
+</section>
+
+<section id="ContactTable">
+   <h2><code>example.db.ContactTable</code></h2>
+   <pre>
+@SetupTable({ "PhoneNumber", "Email", "Street", "City", "State", "PostalCode",
+               "Country" })
+public final class ContactTable extends CustomTable {
+   @SetupColumn("PhoneNumber")
+   public static final Column&lt;String&gt; PHONE_NUMBER = CL.ofString(
+                                       StandardCharsets.US_ASCII, NULLABLE, 12);
+   @SetupColumn("Email")
+   public static final Column&lt;String&gt; EMAIL = CL.ofString(NO_NULL, SMALL);
+   @SetupColumn("Street")
+   public static final Column&lt;String&gt; STREET = CL.ofString(NO_NULL, SMALL);
+   @SetupColumn("City")
+   public static final Column&lt;String&gt; CITY = CL.ofString(NO_NULL, SMALL);
+   @SetupColumn("State")
+   public static final Column&lt;String&gt; STATE = CL.ofString(NO_NULL, SMALL);
+   @SetupColumn("PostalCode")
+   public static final Column&lt;Integer&gt; POSTAL_CODE = CL.ofInteger(NO_NULL);
+   @SetupColumn("Country")
+   public static final Column&lt;String&gt; COUNTRY = CL.ofString(NULLABLE, SMALL);
+   
+   public ContactTable() {
+      initialize(PHONE_NUMBER, EMAIL, STREET, CITY, STATE, POSTAL_CODE,COUNTRY);
+   }
+}</pre>
+</section>
+
+<section id="CourseTable">
+   <h2><code>example.db.CourseTable</code></h2>
+   <pre>
+@SetupTable({ "ID", "Name", "Teacher" })
+public final class CourseTable extends IdTable {
+   @SetupColumn("ID")
+   public static final Column&lt;String&gt; ID = CL.ofString(NO_NULL, SMALL);
+   @SetupColumn("Name")
+   public static final Column&lt;String&gt; NAME = CL.ofString(NO_NULL, SMALL);
+   @SetupColumn(value = "Teacher", refdTable = "Teacher")
+   public static final Column&lt;Ref&gt; TEACHER = CL.ofRef();
+   
+   public CourseTable() {
+      initialize(ID, NAME, TEACHER);
+   }
+}</pre>
+</section>
+
+<section id="EduDB">
+   <h2><code>example.db.EduDB</code></h2>
+   <pre>
+@SetupDatabase(
+   name = "Edu",
+   tables = { "Course", "Student", "Teacher", "Contact" }
+)
+public final class EduDB extends CustomDatabase {
+   @SetupTableDeclaration("Course")
+   public static final CourseTable COURSE_TABLE = new CourseTable();
+   @SetupTableDeclaration("Student")
+   public static final StudentTable STUDENT_TABLE = new StudentTable();
+   @SetupTableDeclaration("Teacher")
+   public static final TeacherTable TEACHER_TABLE = new TeacherTable();
+   @SetupTableDeclaration("Contact")
+   public static final ContactTable CONTACT_TABLE = new ContactTable();
+   
+   public EduDB(Path mainFile, int opMode, boolean writeProtect,
+                                                      int consistencyNumber) {
+      final CustomTable[] tables = { COURSE_TABLE, STUDENT_TABLE,
+                                                TEACHER_TABLE, CONTACT_TABLE };
+      open(mainFile, opMode, writeProtect, null, consistencyNumber, tables);
+      
+      // Create indexes.
+      for (CustomTable table : tables) {
+         if (table instanceof IdTable) {
+            ((IdTable) table).initIndex();
+         }
+      }
+   }
+}</pre>
+</section>
+
+<section id="IdTable">
+   <h2><code>example.db.IdTable</code></h2>
+   <pre>
+abstract class IdTable extends CustomTable {
+   private Column&lt;?&gt; idCol;
+   private Map&lt;Object, Ref&gt; index;
+   
+   @Override
+   protected final void initialize(Column&lt;?&gt;... cols) {
+      super.initialize(cols);
+      idCol = cols[0];
+   }
+
+   final void initIndex() {
+      index = new HashMap&lt;&gt; ((int) (numberOfRows() * 4 / 3) + 1);
+      final Iterator&lt;Row&gt; it = iterator(idCol);
+      while (it.hasNext()) {
+         final Row row = it.next();
+         index.put(row.get(idCol), row.getRef());
+      }
+   }
+   
+   public final Ref indexGet(Object id) {
+      return index.get(id);
+   }
+   
+   private final Ref indexInsert(Object id, Ref ref) {
+      if (index.put(id, ref) != null) {
+         throw new IllegalArgumentException();
+      }
+      return ref;
+   }
+   
+   private final void indexDelete(Object id) {
+      if (index.remove(id) == null) {
+         throw new IllegalArgumentException();
+      }
+   }
+   
+   @Override
+   public final Ref insert(Object... vals) {
+      return indexInsert(vals[0], super.insert(vals));
+   }
+
+   @Override
+   public final void delete(Ref ref) {
+      throw new UnsupportedOperationException();
+   }
+   
+   public final void delete(Object id) {
+      super.delete(indexGet(id));
+      indexDelete(id);
+   }
+}</pre>
+</section>
+
+<section id="RoomTable">
+   <h2><code>example.db.RoomTable</code></h2>
+   <pre>
+public final class RoomTable extends IdTable {
+   public static final Column&lt;String&gt; NUMBER = CL.ofString(NO_NULL, SMALL);
+   public static final Column&lt;Ref[]&gt; COURSES = CL.ofArrayOfRef(20);
+   
+   public RoomTable() {
+      initialize(NUMBER, COURSES);
+   }
+}</pre>
+</section>
+
+<section id="StudentTable">
+   <h2><code>example.db.StudentTable</code></h2>
+   <pre>
+@SetupTable({ "Student Number", "Name", "Contact", "Courses" })
+public final class StudentTable extends IdTable {
+   @SetupColumn("Student Number")
+   public static final Column&lt;Integer&gt; STUDENT_NUMBER = CL.ofInteger(NO_NULL);
+   @SetupColumn("Name")
+   public static final Column&lt;String&gt; NAME = CL.ofString(NO_NULL, SMALL);
+   @SetupColumn(value = "Contact", refdTable = "Contact")
+   public static final Column&lt;Ref&gt; CONTACT = CL.ofRef();
+   @SetupColumn(value = "Courses", refdTable = "Course")
+   public static final Column&lt;Ref[]&gt; COURSES = CL.ofArrayOfRef(30);
+   
+   public StudentTable() {
+      initialize(STUDENT_NUMBER, NAME, CONTACT, COURSES);
+   }
+}</pre>
+</section>
+
+<section id="TeacherTable">
+   <h2><code>example.db.TeacherTable</code></h2>
+   <pre>
+@SetupTable({ "Name", "Salary", "Contact", "Courses" })
+public final class TeacherTable extends IdTable {
+   @SetupColumn("Name")
+   public static final Column&lt;String&gt; NAME = CL.ofString(NO_NULL, SMALL);
+   @SetupColumn("Salary")
+   public static final Column&lt;BigInteger&gt; SALARY = CL.create(
+                                             new BigIntegerType(20, NULLABLE));
+   @SetupColumn(value = "Contact", refdTable = "Contact")
+   public static final Column&lt;Ref&gt; CONTACT = CL.ofRef();
+   @SetupColumn(value = "Courses", refdTable = "Course")
+   public static final Column&lt;Ref[]&gt; COURSES = CL.ofArrayOfRef(45);
+   
+   public TeacherTable() {
+      initialize(NAME, SALARY, CONTACT, COURSES);
+   }
+}</pre>
+</section>
+
+<section id="Contact">
+   <h2><code>example.pl.Contact</code></h2>
+   <pre>
+public final class Contact {
+   private String phoneNumber;
+   private String email;
+   private String street;
+   private String city;
+   private String state;
+   private int postalCode;
+   private String country;
+   
+   private final String checkEmail(String value) {
+      if (value == null || value.indexOf('@') &lt; 0) {
+         throw new IllegalArgumentException();
+      }
+      return value;
+   }
+   
+   public Contact(String phoneNumber, String email, String street, String city,
+                                 String state, int postalCode, String country) {
+      this.phoneNumber = phoneNumber;
+      this.email = checkEmail(email);
+      this.street = street;
+      this.city = city;
+      this.state = state;
+      this.postalCode = postalCode;
+      this.country = country;
+   }
+
+   public final String getPhoneNumber() {
+      return phoneNumber;
+   }
+   
+   public final void setPhoneNumber(String value) {
+      phoneNumber = value;
+   }
+
+   public final String getEmail() {
+      return email;
+   }
+   
+   public final void setEmail(String value) {
+      email = checkEmail(value);
+   }
+
+   public final String getStreet() {
+      return street;
+   }
+   
+   public final void setStreet(String value) {
+      street = value;
+   }
+
+   public final String getCity() {
+      return city;
+   }
+   
+   public final void setCity(String value) {
+      city = value;
+   }
+
+   public final String getState() {
+      return state;
+   }
+   
+   public final void setState(String value) {
+      state = value;
+   }
+
+   public final int getPostalCode() {
+      return postalCode;
+   }
+   
+   public final void setPostalCode(int value) {
+      postalCode = value;
+   }
+
+   public final String getCountry() {
+      return country;
+   }
+   
+   public final void setCountry(String value) {
+      country = value;
+   }
+}</pre>
+</section>
+
+<section id="Course">
+   <h2><code>example.pl.Course</code></h2>
+   <pre>
+public final class Course {
+   private final String id;
+   private final String name;
+   private final Ref teacherRef;
+   
+   Course(String id, String name, Ref teacherRef) {
+      this.id = id;
+      this.name = name;
+      this.teacherRef = teacherRef;
+   }
+   
+   public final String getId() {
+      return id;
+   }
+   
+   public final String getName() {
+      return name;
+   }
+   
+   public final String getTeacher() {
+      return EduDB.TEACHER_TABLE.getValue(teacherRef, TeacherTable.NAME);
+   }
+}</pre>
+</section>
+
+<section id="EduPL">
+   <h2><code>example.pl.EduPL</code></h2>
+   <pre>
+public final class EduPL implements AutoCloseable {
+   private final EduDB db;
+   
+   public EduPL(Path mainFile, int opMode, boolean writeProtect,
+                                                      int consistencyNumber) {
+      db = new EduDB(mainFile, opMode, writeProtect, consistencyNumber);
+   }
+   
+   public final void persistCourse(String id, String name) {
+      final Ref ref = COURSE_TABLE.indexGet(id);
+      if (ref == null)
+         COURSE_TABLE.insert(id, name, null);
+      else {
+         COURSE_TABLE.update(ref, CourseTable.NAME.value(name));
+      }
+   }
+   
+   private final Ref insertContact(Contact contact) {
+      return CONTACT_TABLE.insert(contact.getPhoneNumber(), contact.getEmail(),
+                     contact.getStreet(), contact.getCity(), contact.getState(),
+                     contact.getPostalCode(), contact.getCountry());
+   }
+   
+   private final void updateContact(Ref ref, Contact contact) {
+      final Row stored = CONTACT_TABLE.get(ref);
+      
+      final List&lt;ColVal&lt;?&gt;&gt; colVals = new ArrayList&lt;&gt;();
+      if (!Objects.equals(contact.getPhoneNumber(), stored.get(PHONE_NUMBER))) {
+         colVals.add(PHONE_NUMBER.value(contact.getPhoneNumber()));
+      }
+      if (!contact.getEmail().equals(stored.get(EMAIL))) {
+         colVals.add(EMAIL.value(contact.getEmail()));
+      }
+      if (!contact.getStreet().equals(stored.get(STREET))) {
+            colVals.add(STREET.value(contact.getStreet()));
+      }
+      if (!contact.getCity().equals(stored.get(CITY))) {
+         colVals.add(CITY.value(contact.getCity()));
+      }
+      if (!contact.getState().equals(stored.get(STATE))) {
+         colVals.add(STATE.value(contact.getState()));
+      }
+      if (Integer.compare(contact.getPostalCode(),
+                                             stored.get(POSTAL_CODE)) != 0) {
+         colVals.add(POSTAL_CODE.value(contact.getPostalCode()));
+      }
+      if (!Objects.equals(contact.getCountry(), stored.get(COUNTRY))) {
+         colVals.add(COUNTRY.value(contact.getCountry()));
+      }
+      
+      CONTACT_TABLE.update(ref, colVals.toArray(new ColVal&lt;?&gt;[colVals.size()]));
+   }
+   
+   public final void persistStudent(int studentNumber, String name,
+                                       Contact contact, List&lt;String&gt; courses) {
+      // Get row references of courses.
+      final Ref[] courseRefs = new Ref[courses.size()];
+      for (int i = 0; i &lt; courseRefs.length; i++) {
+         courseRefs[i] = COURSE_TABLE.get(COURSE_TABLE.indexGet(
+                                                      courses.get(i))).getRef();
+      }
+      
+      final Ref ref = STUDENT_TABLE.indexGet(studentNumber);
+      if (ref == null)
+         STUDENT_TABLE.insert(studentNumber, name, insertContact(contact),
+                                                                  courseRefs);
+      else {
+         updateContact(STUDENT_TABLE.getValue(ref, StudentTable.CONTACT),
+                                                                  contact);
+         STUDENT_TABLE.update(ref, StudentTable.NAME.value(name),
+                                       StudentTable.COURSES.value(courseRefs));
+      }
+   }
+   
+   public final void persistTeacher(String name, BigInteger salary,
+                                       Contact contact, List&lt;String&gt; courses) {
+      // Get row references of courses.
+      final Ref[] courseRefs = new Ref[courses.size()];
+      for (int i = 0; i &lt; courseRefs.length; i++) {
+         courseRefs[i] = COURSE_TABLE.get(COURSE_TABLE.indexGet(
+                                                      courses.get(i))).getRef();
+      }
+      
+      Ref ref = TEACHER_TABLE.indexGet(name);
+      if (ref == null)
+         ref = TEACHER_TABLE.insert(name, salary, insertContact(contact),
+                                                                  courseRefs);
+      else {
+         updateContact(TEACHER_TABLE.getValue(ref, TeacherTable.CONTACT),
+                                                                     contact);
+         TEACHER_TABLE.update(ref, TeacherTable.SALARY.value(salary),
+                                 TeacherTable.COURSES.value(courseRefs));
+      }
+      // ref != null
+      
+      // Update the link from course to teacher.
+      for (Ref courseRef : courseRefs) {
+         COURSE_TABLE.update(courseRef, CourseTable.TEACHER.value(ref));
+      }
+   }
+   
+   public final void deleteCourse(String id) {
+      COURSE_TABLE.delete(id);
+   }
+   
+   public final void deleteStudent(int studentNumber) {
+      final Ref contactRef = STUDENT_TABLE.getValue(
+                                    STUDENT_TABLE.indexGet(studentNumber),
+                                    StudentTable.CONTACT);
+      STUDENT_TABLE.delete(studentNumber);
+      CONTACT_TABLE.delete(contactRef);
+   }
+   
+   public final void deleteTeacher(String name) {
+      final Row row = TEACHER_TABLE.get(TEACHER_TABLE.indexGet(name),
+                              TeacherTable.CONTACT, TeacherTable.COURSES);
+      // Release link from course to teacher.
+      for (Ref courseRef : row.get(TeacherTable.COURSES)) {
+         COURSE_TABLE.update(courseRef, CourseTable.TEACHER.value(null));
+      }
+      
+      TEACHER_TABLE.delete(name);
+      CONTACT_TABLE.delete(row.get(TeacherTable.CONTACT));
+   }
+   
+   public final Course getCourse(String id) {
+      final Row row = COURSE_TABLE.get(COURSE_TABLE.indexGet(id));
+      return new Course(row.get(CourseTable.ID),
+                        row.get(CourseTable.NAME),
+                        row.get(CourseTable.TEACHER));
+   }
+   
+   public final Student getStudent(int studentNumber) {
+      final Row row = STUDENT_TABLE.get(STUDENT_TABLE.indexGet(studentNumber));
+      return new Student(row.get(StudentTable.STUDENT_NUMBER),
+                         row.get(StudentTable.NAME),
+                         row.get(StudentTable.CONTACT),
+                         row.get(StudentTable.COURSES));
+   }
+   
+   public final Teacher getTeacher(String name) {
+      final Row row = TEACHER_TABLE.get(TEACHER_TABLE.indexGet(name));
+      return new Teacher(row.get(TeacherTable.NAME),
+                         row.get(TeacherTable.SALARY),
+                         row.get(TeacherTable.CONTACT),
+                         row.get(TeacherTable.COURSES));
+   }
+   
+   public final Unit openUnit() {
+      return db.openUnit();
+   }
+   
+   public final ReadZone openReadZone() {
+      return db.openReadZone();
+   }
+
+   @Override
+   public void close() {
+      db.close();
+   }
+}</pre>
+</section>
+
+<section id="Person">
+   <h2><code>example.pl.Person</code></h2>
+   <pre>
+public abstract class Person {
+   private final String name;
+   private final Ref contactRef;
+   private final Ref[] courseRefs;
+   
+   Person(String name, Ref contactRef, Ref[] courseRefs) {
+      this.name = name;
+      this.contactRef = contactRef;
+      this.courseRefs = courseRefs;
+   }
+   
+   public final String getName() {
+      return name;
+   }
+   
+   public final Contact getContact() {
+      final Row row = CONTACT_TABLE.get(contactRef);
+      return new Contact(row.get(PHONE_NUMBER), row.get(EMAIL), row.get(STREET),
+                           row.get(CITY), row.get(STATE), row.get(POSTAL_CODE),
+                           row.get(COUNTRY));
+   }
+   
+   public final List&lt;String&gt; getCourses() {
+      final int n = courseRefs.length;
+      final List&lt;String&gt; courses = new ArrayList&lt;&gt;(n);
+      for (int i = 0; i &lt; n; i++) {
+         courses.add(COURSE_TABLE.getValue(courseRefs[i], CourseTable.ID));
+      }
+      return courses;
+   }
+}</pre>
+</section>
+
+<section id="Student">
+   <h2><code>example.pl.Student</code></h2>
+   <pre>
+public final class Student extends Person {
+   private final int studentNumber;
+   
+   Student(int studentNumber, String name, Ref contactRef, Ref[] courseRefs) {
+      super(name, contactRef, courseRefs);
+      this.studentNumber = studentNumber;
+   }
+   
+   public final int getStudentNumber() {
+      return studentNumber;
+   }
+}</pre>
+</section>
+
+<section id="Teacher">
+   <h2><code>example.pl.Teacher</code></h2>
+   <pre>
+public final class Teacher extends Person {
+   private final BigInteger salary;
+   
+   Teacher(String name, BigInteger salary, Ref contactRef, Ref[] courseRefs) {
+      super(name, contactRef, courseRefs);
+      this.salary = salary;
+   }
+   
+   public final BigInteger getSalary() {
+      return salary;
+   }
+}</pre>
+</section>
+
+<section id="Populator">
+   <h2><code>example.Populator</code></h2>
+   <pre>
+public final class Populator {
+   public static final void run(Path layoutFile) {
+      try (EduPL pl = new EduPL(layoutFile, -1, false, 0)) {
+         pl.persistCourse("CSM", "Certified ScrumMaster");
+         pl.persistCourse("BOSS", "Chef Essentials");
+         pl.persistCourse("SCF", "Selenium and Cucumber Foundation");
+         pl.persistCourse("CFR", "Cybersec First Responder");
+         pl.persistCourse("CDPC", "Configuring and Deploying a Private Cloud");
+         pl.persistCourse("LSSGBP", "Lean Six Sigma Green Belt Practitioner");
+         pl.persistCourse("PE", "Puppet Essentials");
+         pl.persistCourse("RHOSA", "Red Hat OpenStack Administration II");
+         pl.persistCourse("HDJ", "HDP Developer: Java");
+         pl.persistCourse("LBSP", "Linux BASH Shell Programming");
+         pl.persistCourse("MBS", "Mastering BASH Scripts");
+         pl.persistCourse("P3P", "Python 3 Programming");
+         pl.persistCourse("ROR", "Ruby on Rails");
+         pl.persistCourse("CEH", "Certified Ethical Hacker v9");
+         pl.persistCourse("CSHARP", "The C# Programming Language");
+         pl.persistCourse("TA", "Tomcat Administration");
+         pl.persistCourse("CBC", "CCNA Bootcamp");
+         pl.persistCourse("PMBB", "Pestle, Most and Boston Box");
+         
+         pl.persistStudent(1928, "James Smith", new Contact("234-911-5678",
+                           "jsmith@example.com", "812 Main", "Barnsby", "NY",
+                           48253, "USA"), Arrays.asList("P3P", "TA"));
+         pl.persistStudent(362, "Maria Garcia", new Contact("123-234-5678",
+                           "m.garcia@example.com", "45 Elm", "Summercity", "CA",
+                           15435, null), Arrays.asList("BOSS"));
+         pl.persistStudent(834, "David Jones", new Contact("845-611-7244",
+                           "david.jones@example.com", "9 Washington",
+                           "Springcity", "WK", 86342, "USA"),
+                           Arrays.asList("LBSP", "CSHARP", "CSM"));
+         pl.persistStudent(1583, "Sarah Williams", new Contact("123-847-7541",
+                           "s.williams@example.com", "63 Pine", "Autumncity",
+                           "ZH", 25317, "Canada"),
+                           Arrays.asList("CBC", "CSHARP", "LSSGBP", "TA"));
+         pl.persistStudent(74, "Nigel Lee", new Contact(null,
+                           "nigel@example.com", "13 Howard", "Wintercity", "RO",
+                           74682, "Mexico"), Arrays.asList("RHOSA", "TA"));
+         pl.persistStudent(348, "Jessica Hernandez", new Contact("184-584-9354",
+                           "jh@example.com", "428 Market","Orangecity", "OA",
+                           24381, "USA"), Arrays.asList("PE"));
+         
+         pl.persistTeacher("Jane Smith", new BigInteger("76343"), new Contact(
+                           "487-211-6824", "jane@example.com", "45 Pine",
+                           "Autumncity", "ZH", 25317, "Canada"),
+                           Arrays.asList("RHOSA", "P3P", "TA"));
+         pl.persistTeacher("Bill Johnson", new BigInteger("23546"), new Contact(
+                           "184-754-2546", "johnsonbill@example.com", "32 Pine",
+                           "Applecity", "IS", 84672, "USA"),
+                           Arrays.asList("ROR"));
+         pl.persistTeacher("Amy Turner", new BigInteger("48623"), new Contact(
+                           null, "amy.turner@example.com", "561 Hazle",
+                           "Cherrycity", "DK", 56214, null),
+                           Arrays.asList("LSSGBP", "SCF"));
+         pl.persistTeacher("Marc Vernes", new BigInteger("47732"), new Contact(
+                           "148-532-4256", "marcV@example.com", "47 Eleven",
+                           "Cherrycity", "DK", 56214, "USA"),
+                           Arrays.asList("CEH", "PMBB"));
+      }
+   }
+}</pre>
+</section>
+<div class="backToTop"><a href="#top">Back To Top</a></div>
+</main>
+</body>
+</html>
