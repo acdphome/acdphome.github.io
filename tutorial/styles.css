@@ -1,0 +1,60 @@
+body {
+   font-family: Arial, Helvetica, sans-serif;
+   margin: 0;
+}
+
+#top {
+   height: 0px;
+}
+
+header {
+   margin-left: 20px;
+}
+
+#navMain {
+   display: flex;
+   flex-flow: row wrap;
+   background-color: #9BD770;
+   padding: 5px 5px 10px 10px;
+}
+
+#navMain > a {
+   color: mediumBlue;
+   margin: 5px 5px 0px 0px;
+   padding: 5px;
+   text-decoration: none;
+}
+
+#navMain > a:hover {
+   color: black;
+}
+
+#navMain > a.selected {
+   color: black;
+   background-color: #D7F4B8;
+}
+
+div.navPage {
+   display: flex;
+   flex-direction: column;
+}
+
+main {
+	margin: 20px 20px 0px 20px;
+   line-height: 1.5;
+}
+
+main a:link {
+	color: mediumBlue;
+	text-decoration:none;
+}
+
+main a:hover { text-decoration:underline; }
+
+main code { font-size: 120%; }
+
+main samp { font-size: 120%; }
+
+div.backToTop {
+   text-align: right;
+}

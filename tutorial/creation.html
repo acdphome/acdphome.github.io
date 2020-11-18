@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <title>Java ACDP Tutorial</title>
+   <meta name="description" content="Tutorial for ACDP (Application Controlled
+               Data Persistence)" />
+   <meta name="author" content="Beat Hörmann" />
+   <meta name="keywords" content="ACDP, Java, database, persistence,
+               navigational, noSql" />
+   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+   <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="top">&nbsp;</div>
+<header>
+   <h1>Java ACDP Tutorial</h1>
+</header>
+<nav id="navMain">
+   <a href="index.html">Home</a>
+   <a href="design.html">Design</a>
+   <a class="selected" href="#">Creation</a>
+   <a href="opening.html">Opening</a>
+   <a href="elaboration.html">Elaboration</a>
+   <a href="querying.html">Querying</a>
+   <a href="maintenance.html">Maintenance</a>
+   <a href="sources.html">Sources</a>
+</nav>
+<main>
+<section>
+   <h2>Creation</h2>
+   In Chapter <q><a href="design.html">Design</a></q> we coded the classes
+   for a sample database.
+   Once the classes have been coded, creating the actual database is just a
+   matter of running a single method of the
+   <a href="../javadoc/acdp/tools/Setup.html" target="_blank">Setup Tool</a>.
+   But before that, a few preparatory work needs to be done.
+   <p>
+   The remaining sections of this page are
+   </p>
+   <div class="navPage">
+      <a href="#section1">Preparing the Classes</a>
+      <a href="#section2">Creating the Database</a>
+      <a href="#section3">Creating an RO Database from a WR Database</a>
+   </div>
+</section>
+
+<section id="section1">
+	<h2>Preparing the Classes</h2>
+   For the setup tool to run successfully, the database class and the table
+   classes must meet a few requirements.
+   It is worth noting that these requirements only need to be met during the
+   one-time process of creating the database, which means that all changes made
+   for this purpose can be undone afterwards.
+   Such changes are highlighted below.
+   
+   <section id="section1.1">
+      <h3>Preparing the Database Class</h3>
+	   The following things must be done:
+	   <ul>
+	      <li>
+         The class declaration must be annotated with the
+         <a href="../javadoc/acdp/tools/Setup.SetupDatabase.html" target="_blank">
+         <code>@SetupDatabase</code></a> annotation.
+         </li>
+         <li>
+         All table declarations must be annotated with the
+         <a href="../javadoc/acdp/tools/Setup.SetupTableDeclaration.html"
+         target="_blank"><code>@SetupTableDeclaration</code></a> annotation.
+	      </li>
+	   </ul>
+      Here is the annotated sample database class from Chapter <q><a
+      href="design.html">Design</a></q>:
+      <pre>
+   <mark>@SetupDatabase(</mark>
+      <mark>name = "Edu",</mark>
+      <mark>tables = { "Course", "Student", "Teacher", "Contact" }</mark>
+   <mark>)</mark>
+   final class EduDB extends CustomDatabase {
+      <mark>@SetupTableDeclaration("Course")</mark>
+      static final CourseTable COURSE_TABLE = new CourseTable();
+      <mark>@SetupTableDeclaration("Student")</mark>
+      static final StudentTable STUDENT_TABLE = new StudentTable();
+      <mark>@SetupTableDeclaration("Teacher")</mark>
+      static final TeacherTable TEACHER_TABLE = new TeacherTable();
+      <mark>@SetupTableDeclaration("Contact")</mark>
+      static final ContactTable CONTACT_TABLE = new ContactTable();
+   
+      EduDB(Path mainFile, int opMode, boolean writeProtect,
+                                                      int consistencyNumber) {
+         open(mainFile, opMode, writeProtect, null, consistencyNumber,
+                   COURSE_TABLE, STUDENT_TABLE, TEACHER_TABLE, CONTACT_TABLE);
+      }
+   }</pre>
+      Remarks:
+      <ol>
+         <li>
+         The name of the database is specified as the value of the
+         <code>name</code> element of the <code>@SetupDatabase</code>
+         annotation.
+         Besides the required <code>name</code> and <code>tables</code>
+         elements, the <code>@SetupDatabase</code> annotation has an optional
+         <code>version</code> element which we haven't used in this example.
+         </li>
+         <li>
+         The name of a table is specified with the
+         <code>@SetupTableDeclaration</code> annotation.
+         The table names are repeated in the <code>tables</code> element of
+         the <code>@SetupDatabase</code> annotation.
+         </li>
+         <li>
+         The order of the table names listed in the <code>tables</code> element
+         of the <code>@SetupDatabase</code> annotation must be the same as the
+         order in which the corresponding table variables appear in the
+         <code>open</code> method.
+         (The <code>open</code> method is invoked in the constructor.)
+         </li>
+      </ol>
+   </section> 
+   
+   <section id="section1.2">
+      <h3>Preparing the Table Classes</h3>
+      The following things must be done:
+      <ul>
+         <li>
+         The class declaration must include the <code>public</code> access level
+         modifier and be annotated with the
+         <a href="../javadoc/acdp/tools/Setup.SetupTable.html" target="_blank">
+         <code>@SetupTable</code></a> annotation.
+         </li>
+         <li>
+         Each column declaration must include the <code>public</code> access
+         level modifier and must be annotated with the
+         <a href="../javadoc/acdp/tools/Setup.SetupTable.html" target="_blank">
+         <code>@SetupColumn</code></a> annotation.
+         </li>
+         <li>
+         The table class must have a <code>public</code> no-arg constructor.
+         </li>
+      </ul>
+      As an example, here the annotated Student table class from Chapter <q><a
+      href="design.html">Design</a></q>:
+      <pre>
+   <mark>@SetupTable({ "Student Number", "Name", "Contact", "Courses" })</mark>
+   <mark>public</mark> final class StudentTable extends CustomTable {
+      <mark>@SetupColumn("Student Number")</mark>
+      <mark>public</mark> static final Column&lt;Integer&gt; STUDENT_NUMBER = CL.ofInteger(NO_NULL);
+      <mark>@SetupColumn("Name")</mark>
+      <mark>public</mark> static final Column&lt;String&gt; NAME = CL.ofString(NO_NULL, SMALL);
+      <mark>@SetupColumn(value = "Contact", refdTable = "Contact")</mark>
+      <mark>public</mark> static final Column&lt;Ref&gt; CONTACT = CL.ofRef();
+      <mark>@SetupColumn(value = "Courses", refdTable = "Course")</mark>
+      <mark>public</mark> static final Column&lt;Ref[]&gt; COURSES = CL.ofArrayOfRef(30);
+      
+      <mark>public</mark> StudentTable<mark>()</mark> {
+         initialize(STUDENT_NUMBER, NAME, CONTACT, COURSES);
+      }
+   }</pre>
+      Remarks:
+      <ol>
+         <li>
+         The name of a column is specified with the <code>@SetupColumn</code>
+         annotation.
+         The column names are repeated in the <code>@SetupTable</code>
+         annotation.
+         </li>
+         <li>
+         The order of the column names listed in the <code>@SetupTable</code>
+         annotation must be the same as the order in which the corresponding
+         column variables appear in the <code>initialize</code> method.
+         (The <code>initialize</code> method is invoked in the constructor.)
+         </li>
+         <li>
+         The name of the referenced table of a column with a reference type is
+         specified by the <code>refdTable</code> element of the
+         <code>@SetupColumn</code> annotation.
+         Recall that the name of a table is specified as the value of the
+         <code>@SetupTableDeclaration</code> annotation used in the database
+         class.
+         </li>
+      </ol>
+   </section>
+   
+</section>
+
+<section id="section2">
+   <h2>Creating the Database</h2>
+   Invoking <code>Setup.run(String, Path)</code> creates the database.
+   The first parameter specifies the qualified name of the database class and
+   the second the directory where to save the generated database files.
+   (The database class is the class annotated with the
+   <code>@SetupDatabase</code> annotation.)
+   <p>
+   For example, we create our sample database and save it to the <q>dbDir</q>
+   directory by executing
+   </p>
+   <pre>
+   <code>Setup.run("example.db.EduDB", Paths.get("dbDir"));</code></pre>
+   If nothing goes wrong a message similar to
+   <pre>
+   <samp>INFO: Database "Edu" successfully created and saved to "dbDir".</samp></pre>
+   is printed to the standard output stream.
+   <p>
+   Among the files created in the <q>dbDir</q> directory you'll find a file
+   with the name <q><code>layout</code></q>.
+   The layout file is the main database file of a WR database and contains all
+   information needed to run the database.
+   (The WR database type is explained in the next section.)
+   You can <a href="layout1" target="_blank">open the layout file</a> with any
+   text viewer and read it.
+   The entries are formatted as described in the
+   <a href="../javadoc/acdp/misc/Layout.html" target="_blank">
+   <code>Layout</code></a> class.
+   Do you recognize the name of the database, the names of its tables and the
+   names of the tables' columns we just specified in the previous section?
+   Section <q><a href="maintenance.html#section1">Changing Settings</a></q> of
+   Chapter <q><a href="maintenance.html">Maintenance</a></q> shows you how to
+   safely change the entries in the layout file.
+   </p>
+   <strong>Note</strong>: Never change the layout file manually, unless you are
+   a real ACDP expert!
+</section>
+
+<section id="section3">
+   <h2>Creating an RO Database from a WR Database</h2>
+   When we speak of an ACDP database we usually mean the writable <q>WR</q>
+   type.
+   However, there is a second database type, the <q>RO</q> type.
+   An RO database is readonly and resides in a highly compacted single file.
+   As will be shown in Chapter <q><a href="opening.html">Opening</a></q>, an RO
+   database can be loaded completely into main memory, provided that enough main
+   memory is available.
+   An application whose data is completely in main memory usually scales
+   better with respect to the number of concurrent read operations compared
+   to an application that has to read data on demand from a secondary memory
+   device.
+   <p>
+   An RO database stored in a file specified by the first argument of the
+   following method can be created from an <em>open</em> WR database by
+   invoking the
+   </p>
+   <pre>
+   <code>createRO(Path, ICipherFactory)</code></pre>
+   method from either an instance of a custom database class (a custom database
+   class inherits this method from the
+   <a href="../javadoc/acdp/design/CustomDatabase.html" target="_blank">
+   <code>CustomDatabase</code></a> class) or of an instance
+   implementing the <a href="../javadoc/acdp/Database.html" target="_blank">
+   <code>Database</code></a> interface, depending on whether the database was
+   opened as a strongly or weakly typed database, respectively.
+   (In Chapter <q><a href="opening.html">Opening</a></q> you learn how to open
+   a database as a strongly typed or a weakly typed database.)
+   <p>
+   Specifying a non-null value for the <code>ICipherFactory</code> parameter
+   results in an encrypted RO database.
+   </p>
+   Note that the reverse way, that is the creation of a WR database from an RO
+   database, is not possible.
+</section>
+<div class="backToTop"><a href="#top">Back To Top</a></div>
+</main>
+</body>
+</html>

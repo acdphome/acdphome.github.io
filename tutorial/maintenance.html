@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <title>Java ACDP Tutorial</title>
+   <meta name="description" content="Tutorial for ACDP (Application Controlled
+               Data Persistence)" />
+   <meta name="author" content="Beat Hörmann" />
+   <meta name="keywords" content="ACDP, Java, database, persistence,
+               navigational, noSql" />
+   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+   <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="top">&nbsp;</div>
+<header>
+   <h1>Java ACDP Tutorial</h1>
+</header>
+<nav id="navMain">
+   <a href="index.html">Home</a>
+   <a href="design.html">Design</a>
+   <a href="creation.html">Creation</a>
+   <a href="opening.html">Opening</a>
+   <a href="elaboration.html">Elaboration</a>
+   <a href="querying.html">Querying</a>
+   <a class="selected" href="#">Maintenance</a>
+   <a href="sources.html">Sources</a>
+</nav>
+<main>
+<section>
+   <h2>Maintenance</h2>
+   You don't need to be a certified database administrator to maintain an ACDP
+   database.
+   Maintaining an ACDP database involves:
+   <ol>
+      <li>Making changes to the database settings.</li>
+      <li>Compacting the database from time to time.</li>
+      <li>Making structural changes to the database.</li>
+      <li>Checking and possibly restoring the integrity of the database.</li>
+   </ol>
+   <p>
+   These tasks are covered in the remaining sections of this page:
+   </p>
+   <div class="navPage">
+      <a href="#section1">Changing Settings</a>
+      <a href="#section2">Compacting</a>
+      <a href="#section3">Refactoring</a>
+      <a href="#section4">Checking Integrity</a>
+   </div>
+</section>
+
+<section id="section1">
+   <h2>Changing Settings</h2>
+   The <a href="layout1" target="_blank">layout</a> bundles all information
+   about a database.
+   This includes information from very different categories, such as the names
+   of tables and columns, descriptors of column types, path information of
+   backing data files, dimension sizes, such as the number of bytes for storing
+   row references, and other very technical information.
+   <p>
+   The information contained in the layout can be read invoking the
+   <code>info</code> method which is defined on all three levels (database,
+   table, column).
+   For example, to get the type descriptor of the Courses column of the Teacher
+   table call
+   </p>
+   <pre><code>   try (EduDB db = new EduDB(Paths.get("dbDir/layout"), -1, true, 0)) {
+      String desc = TeacherTable.COURSES.info().type().typeDesc());
+   }</code></pre>
+   (The type descriptor describes the type of a table column.
+   It is used to dynamically create the column types at database startup.)
+   <p>
+   The <code>info</code> method can be used for both a WR and RO database.
+   </p>
+   <p>
+   If the database is a WR database, information from the layout can be read
+   even when the database is closed.
+   This is done with the <a href="../javadoc/acdp/tools/Settings.html"
+   target="_blank"><code>Settings</code></a> class.
+   For example, to get the type descriptor of the Courses column of the Teacher
+   table call
+   </p>
+   <pre><code>   String desc = new Settings(Paths.get("dbDir/layout")).
+                        getTypeDesc("Teacher", "Courses"));</code></pre>
+   where <q>Teacher</q> is the name of the teacher table and <q>Courses</q> is
+   the name of the Courses column.
+   <p>
+   Entries in a layout can also be safely changed with the <code>Settings</code>
+   class.
+   For example, the following code changes the name of the Student table from
+   <q>Student</q> to <q>Pupil</q>, the column name <q>Student Number</q> to
+   <q>Pupil Number</q> and adds the version number <q>1.0</q> to the database.
+   </p>
+   <pre><code>   new Settings(Paths.get("dbDir/layout")).
+             setTableName("Student", "Pupil").
+             setColumnName("Pupil", "Student Number", "Pupil Number").
+             setVersion("1.0").save();</code></pre>
+   It is important to invoke the <code>save</code> method so that the changes
+   are actually saved to the layout file.
+   <p>
+   Not all entries in the layout can be changed with the <code>Settings</code>
+   class.
+   For example, the type descriptor of the Courses column of the Teacher table
+   cannot be changed with the <code>Settings</code> class, because otherwise the
+   database would no longer work.
+   (The type descriptor in the layout is automatically adjusted when the type
+   of a column is changed using the <a href="../javadoc/acdp/tools/Refactor.html"
+   target="_blank"><code>Refactor</code></a> class described in Section <q><a
+   href="#section3">Refactoring</a></q>.)
+   </p>
+   <strong>Note</strong>: Never change the layout file manually, unless you are
+   a real ACDP expert!
+</section>
+
+<section id="section2">
+   <h2>Compacting</h2>
+   ACDP distinguishes between fixed-length (FL) and variable-length (VL) data.
+   This means that the representation of values as a sequence of bytes is
+   either always the same length, regardless of the value, or has a variable
+   length depending on the value.
+   For example, the data of an integer value in the Postal Code column of the
+   <a href="sources.html#ContactTable">Contact table</a> is always four bytes.
+   In contrast, the data of the string values of the Email column have
+   different lengths, depending on the string value.
+   <p>
+   ACDP stores FL and VL data in two separate files.
+   </p>
+   <p>
+   When data is inserted, updated and deleted, unused memory blocks, so-called
+   <em>gaps</em>, arise in the data files.
+   For example, inserting 100 rows into a newly created table and deleting
+   95 results in a FL data file which consists of almost 95% gaps.
+   </p>
+   <p>
+   Gaps in a data file can be eliminated by a process called
+   <em>compacting</em>, which reduces the size of the file accordingly.
+   </p>
+   <p>
+   Fortunately, gaps in an FL data file can be filled in by ACDP as new rows
+   are inserted into the table.
+   So, if you insert 95 rows into the table mentioned above, all gaps in the
+   FL data file are eliminated.
+   Since unused memory blocks can be reused, compacting an FL data file is only
+   necessary in rare cases.
+   </p>
+   <p>
+   Unfortunately, this looks different in case of a VL data file.
+   ACDP has very limited ability to fill gaps in VL data files during normal
+   operation.
+   As VL data is inserted, updated and deleted the number of gaps usually
+   increases over time, making it necessary to compact the VL data file of a
+   table from time to time.
+   </p>
+   The data files can be compacted at any time with the database open using the
+   methods
+   
+   <pre><code>   compactFL()  // Compacts the FL data file of a table</code></pre>
+   
+   and
+   
+   <pre><code>   compactVL()  // Compacts the VL data file of a table</code></pre>
+   
+   which are declared in the <a href="../javadoc/acdp/Table.html"
+   target="_blank"><code>Table</code></a> interface and in the <a
+   href="../javadoc/acdp/design/CustomTable.html"
+   target="_blank"><code>CustomTable</code></a> class.
+   <p>
+   For example, the following program code compacts the VL data file of each
+   table in a database if the size of memory occupied by gaps is larger than
+   the total size of used memory blocks.
+   </p>
+   
+   <pre><code>   // db instance of CustomTable
+   // If db is an instance of Database then replace
+   // second line of code with
+   // for (Table table : db.getTables()) {
+   if (db.info().isWritable()) {
+      // Since db is writable db is a WR database.
+      for (CustomTable table : db.getTables()) {
+         final WRStoreInfo info = (WRStoreInfo)
+                          table.info().storeInfo();
+         if (info.vlUnused() > info.vlUsed()) {
+            table.compactVL();
+         }
+      }
+   }</code></pre>
+   
+   This program code can be executed when the database is opened or closed or,
+   if the database is open for a long time, this program code can be executed
+   in a separate thread every few minutes or seconds.
+   <p>
+   The <a href="../javadoc/acdp/tools/KeyFigures.html"
+   target="_blank"><code>KeyFigures</code></a> class prints a report on the most
+   important figures of a database, including the size of the unused memory for
+   each table.
+   </p>
+</section>
+
+<section id="section3">
+   <h2>Refactoring</h2>
+   Refactoring a database means changing the structure of the database, for
+   instance, removing a table from the database or modifying the type of a
+   column of a certain table.
+   Refactoring is usually done at a time when the database is already filled
+   with some data.
+   The <a href="../javadoc/acdp/tools/Refactor.html"
+   target="_blank"><code>Refactor</code></a> class provides methods for
+   refactoring a database.
+   <p>
+   Let's add to our sample database a new table that stores information about
+   rooms.
+   For each room a number identifying the room and a list of courses held in
+   that room should be stored.
+   The following program code adds the <a
+   href="sources.html#RoomTable"><code>RoomTable</code></a> under the name
+   <q>Room</q> to our sample database which is assumed to be saved in the
+   <q>dbDir</q> directory:
+   
+   <pre><code>   Refactor.addTable(Paths.get("dbDir/layout"), "Room",
+                  new RoomTable(), Refactor.names().
+                  add("Number").add("Courses", "Course"));</code></pre>
+   
+   Note, that the column types of the Room table are defined in the
+   <code>RoomTable</code> class but the names of the columns (<q>Number</q> and
+   <q>Courses</q>) as well as the name of the referenced Course table ("Course")
+   must be specified using an instance of the
+   <a href="../javadoc/acdp/tools/Refactor.Names.html"
+   target="_blank"><code>Refactor.Names</code></a> class.
+   <p>
+   Refactoring changes the database layout: At the very end of the
+   <a href="layout2" target="_blank">database layout file</a> you will find the
+   table layout for the just added Room table.
+   </p>
+   <p>
+   As a second example we change the type of the Salary column in the Teacher
+   table from <code>BigInteger</code> to <code>Double</code> and no longer
+   allow <code>null</code> values to be stored in that column:
+   </p>
+   
+   <pre><code>   Refactor.modifyColumn(Paths.get("dbDir/layout"), null,
+          "Teacher", "Salary", CL.ofDouble(Nulls.NO_NULL),
+                 big -> ((BigInteger) big).doubleValue());</code></pre>
+   
+   Remarks:
+   <ol>
+      <li>
+      The expression <code>CL.ofDouble(Nulls.NO_NULL)</code> defines the Salary
+      column to be of type <code>Double</code>, rejecting <code>null</code>
+      values.
+      </li>
+      <li>
+      Existing <code>BigInteger</code> values are converted to <code>Double</code>
+      values according to the lambda expression <code>big -> ((BigInteger)
+      big).doubleValue()</code>.
+      </li>
+	</ol>
+   As in the first example, this modification affects the <a href="layout3"
+   target="_blank">database layout file</a>:
+   At the position where the Salary column of the Taeacher table is described,
+   the value of the entry <code>typeDesc</code> is changed from
+   <code>BigIntegerni20v</code> to <code>d!i8</code> and the no longer needed
+   entry
+   
+   <pre><code>   typeFactoryClassName = example.db.BigIntegerType</code></pre>
+   
+   is removed.
+   <p>
+   Opening the modified database as a <em>weakly</em> typed database is no
+   problem.
+   However, opening the database as a <em>strongly</em> typed database throws
+   an exception.
+   The reason is that the
+   <a href="sources.html#TeacherTable"><code>TeacherTable</code></a> class
+   defines the Salary column still to be of type <code>BigInteger</code>:
+   </p>
+   
+   <pre><code>   public static final Column&lt;BigInteger&gt; SALARY =
+                CL.create(new BigIntegerType(20, NULLABLE));</code></pre>
+   
+   In order for the modified database to match the table logic again, we have
+   to replace this declaration with
+   
+   <pre><code>   public static final Column&lt;Double&gt; SALARY =
+                                       CL.ofDouble(NO_NULL);</code></pre>
+   
+   But what about existing client code that still assumes the Salary column to
+   be of type <code>BigInteger</code>?
+   Well, due to the strong typing of the column, this mismatch is conveniently
+   reported to the programmer at compile time.
+   (See the discussion in Section
+   <q><a href="opening.html#section1">Strongly and Weakly Typed</a></q> of
+   Chapter <q><a href="opening.html">Opening</a></q>.)
+   <p>
+   Besides the methods <code>addTable</code> and <code>modifyColumn</code>
+   presented here, the <code>Refactor</code> class includes the methods
+   <code>dropTable</code>, <code>dropColumn</code>, and
+   <code>insertColumn</code>.
+   For further information consult the <a href="../javadoc/acdp/tools/Refactor.html"
+   target="_blank">javadoc</a>.
+   </p>
+   We also refer to the javadoc regarding the methods <code>nobsRowRef</code>,
+   <code>nobsOutrowPtr</code>, and <code>nobsRefCount</code>, which make it
+   possible to fundamentally re-dimension a table.
+   The <a href="../javadoc/acdp/tools/KeyFigures.html"
+   target="_blank"><code>KeyFigures</code></a> class prints for each table the
+   values of these parameters and by how much they can be reduced given the
+   amount of data currently stored in the database.
+</section>
+
+<section id="section4">
+   <h2>Checking Integrity</h2>
+   ACDP relies on the computer's file system.
+   If ACDP behaves strangely, a reason may be that changes were made to
+   database files from outside of ACDP, harming the integrity of the database.
+   (The individual integrity constraints are highly technical in nature.
+   Their explanation is beyond the scope of this tutorial.)
+   <p>
+   The method <a
+   href="../javadoc/acdp/misc/ACDP.html#verify(java.nio.file.Path,boolean,boolean)"
+   target="_blank"><code>boolean ACDP.verify(Path layoutFile, boolean fix,
+   boolean report)</code></a> checks the integrity of the database specified by
+   the <code>layoutFile</code> argument and, if <code>fix</code> is set to
+   <code>true</code> and there is an integrity violation, ACDP tries to repair
+   the database.
+   For example, to check the integrity of the <q>Edu</q> database invoke
+   </p>
+   
+   <pre><code>   ACDP.verify(Paths.get("dbDir/layout"), false, true);</code></pre>
+   
+   If no integrity violations are detected this code returns <code>true</code>
+   and prints the following report:
+
+   <pre><samp>   Checking database "Edu" ...
+      Checking table "Course" (1 of 4) ...
+      Completed - No violations detected.
+      Checking table "Student" (2 of 4) ...
+      Completed - No violations detected.
+      Checking table "Teacher" (3 of 4) ...
+      Completed - No violations detected.
+      Checking table "Contact" (4 of 4) ...
+      Completed - No violations detected.
+   Completed - No violations detected.</samp></pre>
+</section>
+<div class="backToTop"><a href="#top">Back To Top</a></div>
+</main>
+</body>
+</html>
