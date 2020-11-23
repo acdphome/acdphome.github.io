@@ -190,8 +190,8 @@
       have to communicate with each other for each data exchange.
       If, in addition, DBMS and client run on dedicated servers, the servers
       must communicate with each other for each data exchange.
-      This is sold with the use of appropriate technologies that certainly do
-      not reduce the error-proneness of the entire system.
+      All of this comes at a price and definitely does not reduce the
+      error-proneness of the overall system.
       </li>
       <li>
       Operating a dedicated DB server tempts you to access the persistent data
@@ -227,18 +227,19 @@
       Object-relational mappers, so called ORMs, are to abstract from the
       relational database model.
       The popularity of ORMs shows that the use of RDBMs is not ideal.
-      However, ORMs themselves are a target for criticism, as stated in
-      Wikipedia:
+      However, ORMs themselves are a target of criticism, as can be seen on
+      <a href="https://en.wikipedia.org/wiki/Object%E2%80%93relational_mapping#Comparison_with_traditional_data_access_techniques">Wikipedia</a>:
+      
       <blockquote>
-      Disadvantages of ORM tools generally stem from the high level of
-      abstraction obscuring what is actually happening in the implementation
-      code.
-      Also, heavy reliance on ORM software has been cited as a major factor in
-      producing poorly designed databases.
+         Disadvantages of ORM tools generally stem from the high level of
+         abstraction obscuring what is actually happening in the implementation
+         code.
+         Also, heavy reliance on ORM software has been cited as a major factor
+         in producing poorly designed databases.
       </blockquote>
-      Practice has impressively shown me that in non-trivial scenarios an ORM
-      really slows down the underlying RDBMS, even after numerous manual
-      tunings.
+      
+      Practice has shown me that an ORM in non-trivial scenarios really slows
+      down the underlying RDBMS even after numerous manual adjustments.
       </li>
    </ul>
 </section>
