@@ -186,9 +186,12 @@
    However, such an approach has the following shortcomings:
    <ul>
       <li>
-      DBMS and client often run in different processes, which makes data
-      exchange more difficult and more error-prone compared to a solution that
-      runs in the same process.
+      DBMS and client often run in separate processes, so that the processes
+      have to communicate with each other for each data exchange.
+      If, in addition, DBMS and client run on dedicated servers, the servers
+      must communicate with each other for each data exchange.
+      This is sold with the use of appropriate technologies that certainly do
+      not reduce the error-proneness of the entire system.
       </li>
       <li>
       Operating a dedicated DB server tempts you to access the persistent data
@@ -223,10 +226,19 @@
       <li>
       Object-relational mappers, so called ORMs, are to abstract from the
       relational database model.
-      Since an ORM cannot know how a client prefers to access the data, it has
-      no idea how to model the relations in the most favorable way.
-      Practice shows that for complex data structures an ORM literally slows
-      down the underlying RDBMS.
+      The popularity of ORMs shows that the use of RDBMs is not ideal.
+      However, ORMs themselves are a target for criticism, as stated in
+      Wikipedia:
+      <blockquote>
+      Disadvantages of ORM tools generally stem from the high level of
+      abstraction obscuring what is actually happening in the implementation
+      code.
+      Also, heavy reliance on ORM software has been cited as a major factor in
+      producing poorly designed databases.
+      </blockquote>
+      Practice has impressively shown me that in non-trivial scenarios an ORM
+      really slows down the underlying RDBMS, even after numerous manual
+      tunings.
       </li>
    </ul>
 </section>
