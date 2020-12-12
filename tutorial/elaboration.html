@@ -270,7 +270,7 @@
    The write operations (insert, update, delete) of the <code>CustomTable</code>
    class are not declared with the <code>final</code> modifier.
    Concrete table classes can overwrite these methods for various purposes,
-   for example to restrict their use or to update an index.
+   such as to restrict their use or, as shown below, to update an index.
    For our sample database, we assume that the domain-specific validity checks
    of values, for example if a certain integer value is actually a valid postal
    code, are already programmed in the DAO classes, so that we don't have to
