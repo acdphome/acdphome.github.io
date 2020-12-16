@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <title>Homepage of ACDP</title>
+   <meta name="description" content="ACDP (Application Controlled Data
+               Persistence)" />
+   <meta name="author" content="Beat Hörmann" />
+   <meta name="keywords" content="ACDP, Java, database, persistence,
+               navigational, noSql" />
+   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+   <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="top">&nbsp;</div>
+<header>
+   <h1>Application Controlled Data Persistence (ACDP)</h1>
+</header>
+<nav id="navMain">
+   <a class="selected" href="#">Home</a>
+   <a href="tutorial/index.html">Tutorial</a>
+   <a href="javadoc/index.html">Javadoc</a>
+   <a href="license.html">License</a>
+   <a href="download.html">Download</a>
+   <a href="about.html">About</a>
+</nav>
+<main>
+<section>
+   <h2>Overview</h2>
+   ACDP is an approach and a Java&reg; framework for designing, operating and
+   maintaining a database as part of a software that requires access to
+   persistent storage of object data.
+   <p>
+   This page describes some key characteristics of ACDP and a few features of
+   the implementation of ACDP in Java.
+   </p>
+   <p>
+   ACDP is the result of many years of ambivalent experience with SQL and
+   relational database systems from different vendors in connection with the
+   persistent storage of complex data structures.
+   This is why this page ends with a few points of criticism regarding the use
+   of common database management systems.
+   </p>
+   <p>
+   If your interest in ACDP is not satisfied after reading this page, you can
+   follow the links in the colored header bar:
+   </p>
+   <ul>
+      <li>
+         <a href="tutorial/index.html">Tutorial</a> invites you to get your
+         hands dirty to learn in a playful way how to use Java ACDP and what
+         you can do with it.
+      </li>
+      <li>
+         <a href="javadoc/index.html">Javadoc</a> describes the API of Java
+         ACDP in all details.
+      </li>
+      <li>
+         <a href="license.html">License</a> describes the conditions under
+         which you can use the source code of Java ACDP.
+      </li>
+      <li>
+         <a href="download.html">Download</a> provides the source code of Java
+         ACDP and of the example used in the tutorial.
+      </li>
+      <li>
+         <a href="about.html">About</a> gives some information about me.
+      </li>
+   </ul>
+   <p>
+   The remaining sections of this page are
+   </p>
+   <div class="navPage">
+      <a href="#section1">Main Characteristics</a>
+      <a href="#section2">More Characteristics</a>
+      <a href="#section3">Features of Java ACDP</a>
+      <a href="#section4">Shortcomings with Database Management Systems</a>
+   </div>
+</section>
+<section id="section1">
+   <h2>Main Characteristics</h2>
+   <ul>
+      <li>
+      ACDP and the programs that access persistent data are written in the
+      same programming language and preferably run in the same process.
+      </li>
+      <li>
+      Navigational: Data can be efficiently accessed via references following
+      the directed edges of an object graph.
+      </li>
+      <li>
+      Built-in data types
+      <ul>
+         <li>
+         include the array type
+         </li>
+         <li>
+         match the data types of the programming language
+         </li>
+         <li>
+         can be extended with customized data types
+         </li>
+      </ul>
+      </li>
+      <li>
+      Thanks to strongly typed tables, columns and values, robust persistence
+      layers of multi-tier applications and services can be programmed
+      relatively easily.
+      </li>
+      <li>
+      No SQL: Queries are programmed.
+      </li>
+      <li>
+      Currently, ACDP is only implemented in Java.
+      See the feature list of Java ACDP below.
+      </li>
+   </ul>
+</section>
+<section id="section2">
+   <h2>More Characteristics</h2>
+   <ul>
+      <li>
+      Writing program code for a data model described with a UML class diagram
+      is straightforward.
+      </li>
+      <li>
+      By bringing persistent data as close as possible to the programs that
+      access them, ACDP facilitates the implementation of a service-oriented
+      architecture in which data is read in a domain-specific context and
+      exclusively changed in compliance with domain-specific constraints.
+      This is in contrast to a dedicated DB server that accepts and processes
+      SQL statements out of a domain-specific context.
+      </li>
+      <li>
+      Tables are <em>sequences</em> of rows and a row contains a
+      <em>sequence</em> of values.
+      If the same read-only query is executed twice, an iteration of the
+      result returns the records in the same order.
+      </li>
+      <li>
+      Transactions are never executed concurrently, but one after the other.
+      This is a necessary requirement for nested transactions to work as one
+      would naturally expect.
+      Furthermore, clients do not have to expect that ACDP will unexpectedly
+      trigger a rollback, as is the case with conventional DBM systems if, for
+      example, a deadlock has to be prevented due to the concurrent execution of
+      transactions.
+      </li>
+   </ul>
+</section>
+<section id="section3">
+   <h2>Features of Java ACDP</h2>
+   <ul>
+      <li>
+      A database can be stored in the form of a single, highly compressed file
+      and, as a read-only database, can be operated with excellent performance
+      in main memory.
+      </li>
+      <li>
+      Encryption can be enabled providing a customized cipher.
+      </li>
+      <li>
+      Supports Java's streams API so that queries can be formulated in a
+      functional style.
+      </li>
+      <li>
+      Relies on Java's NIO package and thus on the performance of the file
+      system of the underlying operating system.
+      </li>
+      <li>
+      Does not use third-party Java libraries or program files (such as
+      database drivers).
+      There is no magical class enhancement, no leaky abstraction layer, no
+      tricks, no excuses.
+      </li>
+      <li>
+      Java ACDP is free of charge, open source, and licensed under the
+      permissive <q>Lida License</q>.
+      </li>
+   </ul>
+</section>
+<section id="section4">
+   <h2>Shortcomings with Database Management Systems</h2>
+   A (relational) database management system, (R)DBMS, is often used as a
+   back-end for managing the persistent storage of complex data structures.
+   However, such an approach has the following shortcomings:
+   <ul>
+      <li>
+      DBMS and client often run in separate processes, so that the processes
+      have to communicate with each other for each data exchange.
+      If, in addition, DBMS and client run on dedicated servers, the servers
+      must communicate with each other for each data exchange.
+      All of this comes at a price and definitely does not reduce the
+      error-proneness of the overall system.
+      </li>
+      <li>
+      Operating a dedicated DB server tempts you to access the persistent data
+      in an uncontrolled manner and to change data outside of a domain-specific
+      context.
+      </li>
+      <li>
+      Data types provided by the DBMS must be matched to data types provided by
+      the programming language in which clients are written.
+      Furthermore, the relational database model has no native array type.
+      </li>
+      <li>
+      The relational database model is ideal when it comes to executing
+      arbitrary <em>ad hoc</em> queries.
+      However, in the realm of objects data access does not naturally take place
+      ad-hoc, but follows the directed edges of an object graph.
+      The most effective way to implement a link from one object to another is
+      to store a <em>reference</em>, just like objects are referenced in main
+      memory.
+      In the relational database model, however, the reference type is not
+      intended.
+      </li>
+      <li>
+      In the relational database model a relation consists of a <em>set</em> of
+      tuples.
+      The order in which the tuples of a relation are returned in the result of
+      a query as well as the order, in which the values of a tuple are returned,
+      is therefore not defined.
+      If the same read-only query is executed twice, an iteration of the
+      result may return the records in different orders.
+      </li>
+      <li>
+      Object-relational mappers, so called ORMs, are to abstract from the
+      relational database model.
+      The popularity of ORMs shows that the use of RDBMs is not ideal.
+      However, ORMs themselves are a target of criticism, as can be seen on
+      <a href="https://en.wikipedia.org/wiki/Object%E2%80%93relational_mapping#Comparison_with_traditional_data_access_techniques">Wikipedia</a>:
+      
+      <blockquote>
+         Disadvantages of ORM tools generally stem from the high level of
+         abstraction obscuring what is actually happening in the implementation
+         code.
+         Also, heavy reliance on ORM software has been cited as a major factor
+         in producing poorly designed databases.
+      </blockquote>
+      
+      Practice has shown me that an ORM in non-trivial scenarios really slows
+      down the underlying RDBMS even after numerous manual adjustments.
+      </li>
+   </ul>
+</section>
+<div class="backToTop"><a href="#top">Back To Top</a></div>
+</main>
+</body>
+</html>
