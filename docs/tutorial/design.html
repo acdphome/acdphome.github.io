@@ -219,10 +219,6 @@
      <a href="../javadoc/acdp/types/Type.Scheme.html#INROW" target="_blank">
      <em>inrow</em></a> storage scheme which allows the particularly efficient
      storage of values.
-     (All built-in non-array column types, also known as built-in
-     <em>simple</em> column types, with the exception of the default string
-     column type allow for values with a fixed-length byte representation and
-     therefore make use of the inrow storage scheme.)
      </li>
      <li>
      A student can attend at most 30 courses and a teacher instructs at most
@@ -233,12 +229,12 @@
    the reference type, use the
    <a href="../javadoc/acdp/design/CL.html#ofArray(int,acdp.design.SimpleType)"
    target="_blank"><code>CL.ofArray(int, SimpleType)</code></a> method with
-   <em>any</em> built-in or custom simple element type.
+   <em>any</em> built-in or custom non-array element type.
    For example, <code>CL.ofArray(73, ST.beDouble(NO_NULL))</code> creates an
    array with a maximum of 73 <code>Double</code> values that are not allowed
    to be <code>null</code>.
    (The <a href="../javadoc/acdp/design/ST.html" target="_blank"><code>ST</code></a>
-   class is a factory class for ACDP's built-in simple column types.)
+   class is a factory class for ACDP's built-in non-array column types.)
 </section>
 
 <section id="section3">
@@ -367,7 +363,7 @@
       </li>
       <li>
       The <code>nulls</code> parameter of the constructor specifies whether the
-      column allows for the <code>null</code> value.
+      column type allows the <code>null</code> value.
       </li>
       <li>
       The second and fifth arguments of the super constructor invocation tell
@@ -378,23 +374,19 @@
       length.
       </li>
       <li>
-      The type descriptor starts with a <em>prefix</em> which by default is
-      computed by ACDP as a <code>String</code> containing the qualified name
+      The type descriptor starts with a <em>prefix</em> which by default starts
+      with the uppercase letter <code>L</code> followed by the qualified name
       of the column type's class name.
       Overriding the <code>typeDescPrefix()</code> method lets you specify your
       own prefix.
-      This not only has the advantage of making the prefix shorter and more
-      readable, but it can also be used to recognize any text as a valid type
-      descriptor, as is done in the <code>createType(String)</code> factory
-      method.
-      Note that this method throws a <code>CreationException</code> if the
-      argument is not a valid type descriptor for the <code>BigInteger</code>
-      column type.
+      Such a custom prefix must start with an uppercase letter because the
+      type descriptor of a custom column type must start with an uppercase
+      letter.
       </li>
       <li>
-      Notice that the prefix starts with an uppercase letter.
-      Type descriptors of a custom column type must start with an uppercase
-      letter.
+      Note that the <code>createType(String)</code> factory method throws a
+      <code>CreationException</code> if the argument is not a valid type
+      descriptor for the <code>BigInteger</code> column type.
       </li>
    </ol>
    Recall that we want the <code>BigInteger</code> custom column type to replace

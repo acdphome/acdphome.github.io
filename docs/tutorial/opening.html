@@ -41,10 +41,10 @@
    <a href="../javadoc/acdp/Database.html#open(java.nio.file.Path,int,boolean)"
    target="_blank"><code>Database.open</code></a> method opens the database as
    a <em>weakly typed</em> database.
-   For example, assuming our sample database which we created in Section
+   For example, suppose our sample database which we created in Section
    <q><a href="creation.html#section2">Creating the Database</a></q> of Chapter
    <q><a href="creation.html">Creation</a></q> is still saved in the
-   <q>dbDir</q> directory, setting
+   <q>dbDir</q> directory, with
    </p>
    <pre><code>   Path path = Paths.get("dbDir/layout");</code></pre>
    
@@ -101,12 +101,13 @@
    Moreover, the program code is completely independent of the table and column
    names so that these can be changed later without affecting client code.
    Changing the type of a column is no problem either because the compiler
-   signals this change to the programmer by reporting a compilation error.
+   signals this change to the programmer by reporting a compilation error each
+   time this column or a value of this column is used in the program code.
    <p>
    Unfortunately, we can't use these strongly typed fields if we open the
    database as a weakly typed database.
-   In a weakly typed database, tables and columns have to be referenced by name
-   and a value must often be cast to its assumed <q>real</q> type.
+   In a weakly typed database, tables and columns are referenced by name and a
+   value must often be cast to its assumed <q>real</q> type.
    For example, assume that the sample database was opened as a weakly typed
    database.
    Best we can do for assigning the Teacher table and the Postal Code column
@@ -137,9 +138,10 @@
    For example, the insertion of an arbitrary integer into the Postal Code
    column of the Contact table should be avoided, because not every arbitrary
    integer represents a postal code.
-   In general, the <a href="design.html#uml">UML diagram</a> suggests that
-   contacts should only be inserted into and removed from the Contact table in
-   connection with students and teachers.
+   Another example is the handling of contacts:
+   As the <a href="design.html#uml">UML diagram</a> suggests, contacts should
+   only be inserted into and removed from the Contact table in connection with
+   students and teachers.
    </p>
    <p>
    Such domain-specific constraints can be programmed in the custom database

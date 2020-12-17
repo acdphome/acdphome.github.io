@@ -147,7 +147,7 @@
       <li>
       <em>ACDP does not allow dangling row references.</em>
       A dangling row reference would arise if it were possible to delete a row
-      in a table that is referenced by this or another row.
+      in a table that is referenced by another row.
       ACDP therefore prevents the deletion of a referenced row and throws a <a
       href="../javadoc/acdp/exceptions/DeleteConstraintException.html"
       target="_blank"><code>DeleteConstraintException</code></a> instead.
@@ -169,8 +169,8 @@
       <code>null</code>.)
       </li>
       <li>
-      The source code of the student and teacher methods includes the
-      persistence management of contacts.
+      The source code of the methods dealing with students or teachers includes
+      the persistence management of contacts.
       For example, inserting a student into the Student table includes inserting
       that student's contact details into the Contact table.
       When a contact is updated, it is checked which contact details have
@@ -226,7 +226,7 @@
    The interesting thing is that the column value for the postal code does not
    have to be cast to <code>int</code> since <code>row.get(POSTAL_CODE)</code>
    returns an instance of the <code>Integer</code> class which is internally
-   converted by Java to an <code>int</code> value.
+   converted by the JVM to an <code>int</code> value.
    In fact, the <a href="../javadoc/acdp/Row.html#get(acdp.Column)"
    target="_blank"><code>get(Column)</code></a> method of the <code>Row</code>
    interface is declared as
@@ -288,10 +288,11 @@
    </p>
    Note that the public audience is able to consult the index of an ID table by
    invoking the <code>IdTable.indexGet</code> method.
-   However, directly changing the index is not possible.
-   The index is changed each time a student, course or teacher is inserted into
-   or deleted from the respective ID table, see the <code>IdTable.insert</code>
-   and the <code>IdTable.delete(Object)</code> methods.
+   However, there is no direct way for changing the index.
+   The index is changed on the fly every time a student, course or teacher is
+   inserted into or deleted from the respective ID table, see the
+   <code>IdTable.insert</code> and the <code>IdTable.delete(Object)</code>
+   methods.
    Note that the <code>IdTable.insert</code> method overrides the
    <code>CustomTable.insert</code> method.
    Furthermore, the <code>IdTable.delete(Ref)</code> method overrides the
