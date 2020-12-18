@@ -58,7 +58,7 @@
    backing data files, dimension sizes, such as the number of bytes for storing
    row references, and other very technical information.
    <p>
-   The information contained in the layout can be read invoking the
+   The information contained in the layout can be read by invoking the
    <code>info</code> method which is defined on all three levels (database,
    table, column).
    For example, to get the type descriptor of the Courses column of the Teacher
@@ -123,7 +123,8 @@
    In contrast, the data of the string values of the Email column have
    different lengths, depending on the string value.
    <p>
-   ACDP stores FL and VL data in two separate files.
+   ACDP stores FL and VL data of a table of a WR database in two separate data
+   files.
    </p>
    <p>
    When data is inserted, updated and deleted, unused memory blocks, so-called
@@ -138,7 +139,7 @@
    <p>
    Fortunately, gaps in an FL data file can be filled in by ACDP as new rows
    are inserted into the table.
-   So, if you insert 95 rows into the table mentioned above, all gaps in the
+   So, if you reinsert 95 rows into the table mentioned above, all gaps in the
    FL data file are eliminated.
    Since unused memory blocks can be reused, compacting an FL data file is only
    necessary in rare cases.
@@ -185,9 +186,9 @@
       }
    }</code></pre>
    
-   This program code can be executed when the database is opened or closed or,
-   if the database is open for a long time, this program code can be executed
-   in a separate thread every few minutes or seconds.
+   This program code can be executed at the time the database is opened or
+   closed or, if the database is open for a long time, this program code can be
+   executed in a separate thread every few minutes or seconds.
    <p>
    The <a href="../javadoc/acdp/tools/KeyFigures.html"
    target="_blank"><code>KeyFigures</code></a> class prints a report on the most
@@ -327,8 +328,8 @@
    
    <pre><code>   ACDP.verify(Paths.get("dbDir/layout"), false, true);</code></pre>
    
-   If no integrity violations are detected this code returns <code>true</code>
-   and prints the following report:
+   If no integrity violations are detected the <code>verify</code> method
+   returns <code>true</code> and prints the following report:
 
    <pre><samp>   Checking database "Edu" ...
       Checking table "Course" (1 of 4) ...

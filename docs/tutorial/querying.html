@@ -63,11 +63,11 @@
 <section id="section2">
    <h2>Which of <code>EduPL</code>, <code>EduDB</code>, and
        <code>Database</code> to use?</h2>
-   How data stored in the database is accessed depends on how the database is
+   How data stored in the database is accessed, depends on how the database is
    opened.
-   If the persistence layer is opened, an instance of the
-   <a href="sources.html#EduPL"><code>EduPL</code></a> class is used for reading
-   data from and writing data to the database.
+   If the database is opened by creating an instance of the <a
+   href="sources.html#EduPL"><code>EduPL</code></a> class, then this instance
+   is used for reading data from and writing data to the database.
    If, on the other hand, the database is
    <a href="opening.html">opened directly</a>, the central class to communicate
    with the database is either the domain-specific
@@ -78,7 +78,7 @@
    
    <pre><code>   Path path = Paths.get("dbDir/layout");
    
-   // Open persistence layer.
+   // Open database by creating EduPL instance.
    try (EduPL pl = new EduPL(path, -1, false, 0)) {
       // do something with pl
    }
@@ -183,7 +183,7 @@
    And the nice thing is that no knowledge beyond Java is required to program
    database queries in ACDP <em>and</em> to process their results.
    <p>
-   In the following we define a query on our sample database to be an
+   In the following, we define a query on our sample database to be an
    <em>ad-hoc query</em> if it cannot be done with the persistence layer.
    Therefore, we open the sample database as a strongly typed <code>EduDB</code>
    database as was shown in the previous section.
@@ -318,8 +318,8 @@
    </ol>
    
    To execute a database operation within a transaction it must be executed
-   either within a <a href="../javadoc/acdp/Unit.html" target="_blank">unit</a> or
-   a <a href="../javadoc/acdp/ReadZone.html" target="_blank">read zone</a>.
+   either within a <a href="../javadoc/acdp/Unit.html" target="_blank">unit</a>
+   or a <a href="../javadoc/acdp/ReadZone.html" target="_blank">read zone</a>.
    Database operations in a read zone must be read-only.
    <p>
    For example, using a unit, the code snippet
@@ -331,12 +331,14 @@
    }</code></pre>
    
    removes the <q>CFR</q> course from the database.
-   (The <q>CFR</q> course is a <q>dangling</q> course because it is neither
-   referenced by a student nor a teacher.)
+   (The <q>CFR</q> course can be deleted without provoking a <a
+   href="../javadoc/acdp/exceptions/DeleteConstraintException.html"
+   target="_blank"><code>DeleteConstraintException</code></a> because it is
+   neither referenced by a student nor a teacher.)
    If <code>u.commit()</code> had been missing, the deletion process would have
    been undone when the unit was closed.
-   For example, the following code does not remove the other dangling courses
-   from the database, because <code>u.commit()</code> is missing:
+   For example, the following code does not remove the other non-referenced
+   courses from the database, because <code>u.commit()</code> is missing:
    
    <pre><code>   // Don't forget u.commit() after the last write operation.
    try (Unit u = pl.openUnit()) {
@@ -383,6 +385,7 @@
    a write operation, but they are executed concurrently with read operations
    inside open read zones in different threads.
    </p>
+   <p>
    In Section <q><a href="#section3.1">Visiting the Rows of a Table</a></q>
    from above we displayed the name of all courses in the Course table.
    Let's do the same thing but this time inside a read zone:
@@ -392,6 +395,10 @@
                      System.out.println(row.get(NAME)));
    }</code></pre>
    
+   We could execute this operation within a unit, which would, however, have the
+   consequence that all program instructions within read zones in other threads
+   would be blocked until this operation was completed.
+   </p>
    Learn more about how transactions are implemented in ACDP by reading the
    sections <q>Units</q>, <q>Read Zones</q>, and <q>Durability</q> in the
    Javadoc description of the <a href="../javadoc/acdp/Database.html"
