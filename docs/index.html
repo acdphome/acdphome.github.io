@@ -139,12 +139,15 @@
       </li>
       <li>
       Transactions are never executed concurrently, but one after the other.
-      This is a necessary requirement for nested transactions to work as one
-      would naturally expect.
-      Furthermore, clients do not have to expect that ACDP will unexpectedly
-      trigger a rollback, as is the case with conventional DBM systems if, for
-      example, a deadlock has to be prevented due to the concurrent execution of
+      As a result, clients do not have to expect ACDP to roll back unexpectedly,
+      as is the case with traditional DBM systems when a deadlock must be
+      prevented due to the concurrent execution of mutually interfering
       transactions.
+      </li>
+      <li>
+      Nested transactions work as one would naturally expect which means that
+      a committed nested transaction rolls back if the enclosing transaction
+      rolls back.
       </li>
    </ul>
 </section>
