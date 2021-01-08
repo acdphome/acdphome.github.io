@@ -326,7 +326,7 @@
    </p>
    
    <pre><code>   // pl instance of EduPL
-      try (Unit u = pl.openUnit()) {
+   try (Unit u = pl.openUnit()) {
       pl.deleteCourse("CFR");
       <mark>u.commit();</mark>
    }</code></pre>
