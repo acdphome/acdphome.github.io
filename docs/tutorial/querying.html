@@ -325,7 +325,8 @@
    For example, using a unit, the code snippet
    </p>
    
-   <pre><code>   try (Unit u = pl.openUnit()) {
+   <pre><code>   // pl instance of EduPL
+      try (Unit u = pl.openUnit()) {
       pl.deleteCourse("CFR");
       <mark>u.commit();</mark>
    }</code></pre>
