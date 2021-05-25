@@ -129,7 +129,7 @@
       architecture in which data is read in a domain-specific context and
       exclusively changed in compliance with domain-specific constraints.
       This is in contrast to a dedicated DB server that accepts and processes
-      SQL statements out of a domain-specific context.
+      SQL statements outside of a domain-specific context.
       </li>
       <li>
       Tables are <em>sequences</em> of rows and a row contains a
@@ -208,8 +208,8 @@
       <li>
       The relational database model and SQL are ideal when it comes to executing
       arbitrary <em>ad hoc</em> queries.
-      However, in the realm of objects data access does not naturally take place
-      ad-hoc, but follows the directed edges of an object graph.
+      However, in the realm of objects, data access does not naturally take
+      place ad-hoc, but follows the directed edges of an object graph.
       The most effective way to implement a link from one object to another is
       to store a <em>reference</em>, just like objects are referenced in main
       memory.
