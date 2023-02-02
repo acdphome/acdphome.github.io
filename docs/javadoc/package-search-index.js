@@ -1,1 +1,1 @@
-packageSearchIndex = [{"l":"acdp"},{"l":"acdp.design"},{"l":"acdp.exceptions"},{"l":"acdp.misc"},{"l":"acdp.tools"},{"l":"acdp.types"},{"l":"All Packages","url":"allpackages-index.html"}]
+packageSearchIndex = [{"l":"acdp"},{"l":"acdp.design"},{"l":"acdp.exceptions"},{"l":"acdp.misc"},{"l":"acdp.tools"},{"l":"acdp.types"},{"l":"All Packages","u":"allpackages-index.html"}];updateSearchResults();
