@@ -41,7 +41,8 @@
    <div class="navPage">
       <a href="#section1">Preparing the Classes</a>
       <a href="#section2">Creating the Database</a>
-      <a href="#section3">Creating an RO Database from a WR Database</a>
+      <a href="#section3">Creating an RO Database from a WR Database and vice
+      versa</a>
    </div>
 </section>
 
@@ -222,7 +223,7 @@
 </section>
 
 <section id="section3">
-   <h2>Creating an RO Database from a WR Database</h2>
+   <h2>Creating an RO Database from a WR Database and vice versa</h2>
    When we speak of an ACDP database we usually mean the writable <q>WR</q>
    type.
    However, there is a second database type, the <q>RO</q> type.
@@ -254,8 +255,23 @@
    Specifying a non-null value for the <code>ICipherFactory</code> parameter
    results in an encrypted RO database.
    </p>
-   Note that the reverse way, that is the creation of a WR database from an RO
-   database, is not possible.
+   The reverse process is also possible: Invoking the
+   </p>
+   <pre>
+   <code>ROToWR.run(Path, Path, Path, ICipherFactory)</code></pre>
+   method of the <a href="../javadoc/acdp/tools/ROToWR.html" target="_blank">
+   ROToWR Tool</a> creates a WR database from an RO database.
+   Here, the first, second and third parameter are pathes that point to the
+   RO database, the directory of the WR database to be created and the optional
+   layout file of the WR database the RO database was created from,
+   respectively.
+   The cipher factory is used for reading the RO database as well as for writing
+   the WR database.
+   <p>
+   Of course, converting to an RO database with a cipher factory that generates
+   an encryption different from that of the WR database and converting back to
+   a WR database results in a copy of the original WR database, but applying a
+   different encryption.
 </section>
 <div class="backToTop"><a href="#top">Back To Top</a></div>
 </main>
